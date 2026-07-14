@@ -1,0 +1,49 @@
+{
+  "name": "Fortixx - Notificações de Documentos Pendentes (diário)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 24 }] }
+      },
+      "name": "Todo dia às 9h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "documents",
+        "filterType": "manual",
+        "matchingColumns": ["ocr_status"],
+        "conditions": { "conditions": [{ "keyName": "ocr_status", "condition": "eq", "keyValue": "pendente" }] }
+      },
+      "name": "Buscar Documentos Pendentes",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/notifications/digest",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Webhook-Secret", "value": "={{ $env.N8N_WEBHOOK_SECRET }}" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [{ "name": "documents", "value": "={{ $json }}" }]
+        }
+      },
+      "name": "Disparar E-mails de Lembrete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Todo dia às 9h": { "main": [[{ "node": "Buscar Documentos Pendentes", "type": "main", "index": 0 }]] },
+    "Buscar Documentos Pendentes": { "main": [[{ "node": "Disparar E-mails de Lembrete", "type": "main", "index": 0 }]] }
+  }
+}

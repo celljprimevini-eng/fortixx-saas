@@ -1,0 +1,70 @@
+{
+  "name": "Fortixx - Processar Currículo (OCR)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fortixx/resume-parse",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook: Novo Currículo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "bucketName": "documents",
+        "fileKey": "={{ $json.resume_path }}"
+      },
+      "name": "Baixar Currículo do Supabase Storage",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "analyze",
+        "text": "Extraia do currículo abaixo, em JSON: nome completo, email, telefone, anos de experiência, principais habilidades (lista) e cargo mais recente.\n\n{{ $binary.data }}"
+      },
+      "name": "Extrair Dados (OCR + IA)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "notes": "Configurar credencial da API de IA escolhida (OpenAI, Anthropic, etc). Pode ser trocado por um nó de OCR dedicado (Google Vision / AWS Textract) seguido de um nó de parsing."
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/webhooks/n8n",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Webhook-Secret", "value": "={{ $env.N8N_WEBHOOK_SECRET }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "type", "value": "resume_parsed" },
+            { "name": "candidate_id", "value": "={{ $('Webhook: Novo Currículo').item.json.candidate_id }}" },
+            { "name": "extracted", "value": "={{ $json }}" }
+          ]
+        }
+      },
+      "name": "Devolver Resultado para o Fortixx",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: Novo Currículo": { "main": [[{ "node": "Baixar Currículo do Supabase Storage", "type": "main", "index": 0 }]] },
+    "Baixar Currículo do Supabase Storage": { "main": [[{ "node": "Extrair Dados (OCR + IA)", "type": "main", "index": 0 }]] },
+    "Extrair Dados (OCR + IA)": { "main": [[{ "node": "Devolver Resultado para o Fortixx", "type": "main", "index": 0 }]] }
+  }
+}
