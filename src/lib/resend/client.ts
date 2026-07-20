@@ -1,6 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+/**
+ * Cliente Resend com fallback gracioso: se RESEND_API_KEY não estiver
+ * configurada (ex: deploy sem Resend ainda), `sendEmail` apenas loga
+ * e retorna sucesso simulado — o app continua funcionando, só não envia
+ * e-mail real. Quando a key for configurada, volta a enviar normalmente.
+ */
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 interface SendEmailArgs {
   to: string;
@@ -9,6 +17,15 @@ interface SendEmailArgs {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailArgs) {
+  // Fallback gracioso: sem Resend configurado, loga e finge sucesso.
+  if (!resend) {
+    console.warn(
+      `[resend:disabled] E-mail não enviado (RESEND_API_KEY ausente). ` +
+      `Para: ${to} | Assunto: ${subject}`
+    );
+    return { id: 'mock-' + Date.now(), disabled: true } as any;
+  }
+
   return resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || 'Fortixx <noreply@fortixx.com>',
     to,
