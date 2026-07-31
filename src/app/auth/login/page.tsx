@@ -25,18 +25,38 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    // Sign-in via API route server-side — permite rate limit por IP+email
+    // (mitiga V1 do code review: brute force / credential stuffing).
+    // Supabase gerencia sessão via cookies no próprio response, então
+    // não precisamos chamar signInWithPassword do client aqui.
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (signInError) {
-      setError('E-mail ou senha incorretos.');
+      // 429 → rate limit; 4xx → credenciais; 200 → redireciona
+      if (res.status === 429) {
+        setError('Muitas tentativas. Aguarde alguns minutos e tente de novo.');
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        setError('E-mail ou senha incorretos.');
+        setLoading(false);
+        return;
+      }
+
+      const data = (await res.json()) as { redirect: string };
+      // refresh() garante que o server component /dashboard vê a sessão nova
+      router.push(data.redirect);
+      router.refresh();
+    } catch {
+      setError('Não foi possível entrar. Tente novamente.');
       setLoading(false);
-      return;
     }
-
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
-    const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
-
-    router.push(hasVerifiedTotp ? '/auth/verify' : '/dashboard');
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
