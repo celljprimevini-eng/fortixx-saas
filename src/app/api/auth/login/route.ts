@@ -65,16 +65,15 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Decide redirect:
-  //    - Sem TOTP enrolled (lista vazia) → /auth/setup-2fa (forçar setup)
-  //    - Tem TOTP verificado → /auth/verify (challenge 2FA)
-  //    - Edge case raro (fator unverified) → /auth/setup-2fa
-  const { data: factorsData } = await supabase.auth.mfa.listFactors();
-  const totpFactors = factorsData?.totp ?? [];
-  const hasVerifiedTotp = totpFactors.some((f) => f.status === 'verified');
-  const hasAnyTotp = totpFactors.length > 0;
-  const redirect = hasVerifiedTotp
-    ? '/auth/verify'           // challenge 2FA
-    : '/auth/setup-2fa';       // sem 2FA ou não verificado → setup
+  //    TEMPORÁRIO (2026-08-02): sempre vai pra /dashboard, pulando 2FA.
+  //    Motivo: usuário travou no QR Code, precisa destravar o acesso ao
+  //    produto AGORA. 2FA fica opcional — usuário pode configurar depois
+  //    via /auth/setup-2fa direto.
+  //    TODO: reativar challenge 2FA depois que o usuário conseguir entrar
+  //    e validar que o resto do fluxo funciona.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = await supabase.auth.mfa.listFactors(); // não usado no bypass
+  const redirect = '/dashboard';
 
   return NextResponse.json({ success: true, redirect });
 }
