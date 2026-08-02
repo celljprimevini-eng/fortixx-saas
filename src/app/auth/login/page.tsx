@@ -49,11 +49,30 @@ export default function LoginPage() {
         return;
       }
 
-      const data = (await res.json()) as { redirect: string };
+      let data: { redirect?: string; error?: string; raw?: string };
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        console.error('[login] response not JSON', { status: res.status, parseErr });
+        setError(`Resposta inválida do servidor (status ${res.status}). Abra o console (F12) e me manda o erro.`);
+        setLoading(false);
+        return;
+      }
+
+      // Debug: log no console pra diagnosticar fluxo quebrado
+      console.log('[login] API response', { status: res.status, body: data });
+
+      if (!data.redirect) {
+        setError(data.error || 'Resposta inesperada do servidor.');
+        setLoading(false);
+        return;
+      }
+
       // refresh() garante que o server component /dashboard vê a sessão nova
       router.push(data.redirect);
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error('[login] fetch failed', err);
       setError('Não foi possível entrar. Tente novamente.');
       setLoading(false);
     }
