@@ -82,6 +82,21 @@ export const n8nWebhookSchema = z.discriminatedUnion('type', [
 ]);
 
 // ============================================================================
+// /api/onboarding — POST (admin-only, provisiona user+tenant+profile)
+// ============================================================================
+export const onboardingSchema = z.object({
+  email: emailSchema,
+  password: z
+    .string()
+    .min(8, 'senha deve ter pelo menos 8 caracteres')
+    .max(200, 'senha longa demais'),
+  full_name: safeText(120),
+  company_name: safeText(120).optional().or(z.literal('')),
+  existing_tenant_id: idSchema.optional(),
+  role: z.enum(['admin', 'rh', 'gestor', 'colaborador']).default('admin'),
+});
+
+// ============================================================================
 // Limites numéricos
 // ============================================================================
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB

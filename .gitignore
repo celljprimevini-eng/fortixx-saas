@@ -47,3 +47,7 @@ coverage/
 
 .vercel
 .env*
+
+# Local artifacts
+.mig_payloads/
+.mcp.json
