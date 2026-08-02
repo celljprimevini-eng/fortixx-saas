@@ -2,13 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 type Step = 'login' | 'forgot' | 'forgotSent';
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [step, setStep] = useState<Step>('login');
   const [email, setEmail] = useState('');
@@ -25,28 +23,47 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      // Chama API route server-side — tem rate limit + decide redirect (2FA ou dashboard)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (signInError) {
-      setError('E-mail ou senha incorretos.');
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? 'Erro ao entrar. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // Redireciona conforme API mandou (sempre vai pra /auth/setup-2fa na primeira vez)
+      router.push(data.redirect ?? '/dashboard');
+    } catch (err) {
+      setError(`Erro de rede: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
-      return;
     }
-
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
-    const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
-
-    router.push(hasVerifiedTotp ? '/auth/verify' : '/dashboard');
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault();
-    await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
-    });
-    // Sempre mostra a mesma confirmação, exista ou não o e-mail —
-    // não vazamos quais e-mails têm conta (mesmo padrão de antes).
-    setStep('forgotSent');
+    setError(null);
+
+    try {
+      // Recuperação de senha via Supabase direto (client side, sem server-side call por enquanto)
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      // Sempre mostra a mesma confirmação, exista ou não o e-mail —
+      // não vazamos quais e-mails têm conta (mesmo padrão de antes).
+      setStep('forgotSent');
+    } catch (err) {
+      setError(`Erro: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   return (
