@@ -43,17 +43,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Rotas /auth/* são pra usuário DESLOGADO (login/register).
-  // Exceções (rotas que precisam de user logado):
-  //   /auth/verify      → challenge 2FA (após login com TOTP enrolled)
-  //   /auth/setup-2fa   → setup inicial de TOTP (após login sem 2FA)
-  // Se user tá logado e acessa /auth/login ou /auth/register → /dashboard
-  const allowedAuthRoutesWhileLoggedIn = ['/auth/verify', '/auth/setup-2fa'];
-  if (
-    isAuthRoute &&
-    user &&
-    !allowedAuthRoutesWhileLoggedIn.some((p) => request.nextUrl.pathname.startsWith(p))
-  ) {
+  if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/auth/verify')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

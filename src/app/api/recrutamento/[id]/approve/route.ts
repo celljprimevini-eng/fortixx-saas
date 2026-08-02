@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, candidateApprovedEmail } from '@/lib/resend/client';
-import { approveCandidateParamsSchema } from '@/lib/validation/schemas';
 
 /**
  * Este é o coração da automação de recrutamento prometida no front-end:
@@ -13,12 +12,6 @@ import { approveCandidateParamsSchema } from '@/lib/validation/schemas';
  * no Kanban de Pipeline.
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  // V6: validação do param
-  const parsed = approveCandidateParamsSchema.safeParse(params);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
-  }
-
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
@@ -38,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: candidate } = await admin
     .from('candidates')
     .select('*, job_openings(title, department_id)')
-    .eq('id', parsed.data.id)
+    .eq('id', params.id)
     .eq('tenant_id', actingProfile.tenant_id)
     .single();
 

@@ -25,57 +25,18 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    // Sign-in via API route server-side — permite rate limit por IP+email
-    // (mitiga V1 do code review: brute force / credential stuffing).
-    // Supabase gerencia sessão via cookies no próprio response, então
-    // não precisamos chamar signInWithPassword do client aqui.
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-      // 429 → rate limit; 4xx → credenciais; 200 → redireciona
-      if (res.status === 429) {
-        setError('Muitas tentativas. Aguarde alguns minutos e tente de novo.');
-        setLoading(false);
-        return;
-      }
-
-      if (!res.ok) {
-        setError('E-mail ou senha incorretos.');
-        setLoading(false);
-        return;
-      }
-
-      let data: { redirect?: string; error?: string; raw?: string };
-      try {
-        data = await res.json();
-      } catch (parseErr) {
-        console.error('[login] response not JSON', { status: res.status, parseErr });
-        setError(`Resposta inválida do servidor (status ${res.status}). Abra o console (F12) e me manda o erro.`);
-        setLoading(false);
-        return;
-      }
-
-      // Debug: log no console pra diagnosticar fluxo quebrado
-      console.log('[login] API response', { status: res.status, body: data });
-
-      if (!data.redirect) {
-        setError(data.error || 'Resposta inesperada do servidor.');
-        setLoading(false);
-        return;
-      }
-
-      // refresh() garante que o server component /dashboard vê a sessão nova
-      router.push(data.redirect);
-      router.refresh();
-    } catch (err) {
-      console.error('[login] fetch failed', err);
-      setError('Não foi possível entrar. Tente novamente.');
+    if (signInError) {
+      setError('E-mail ou senha incorretos.');
       setLoading(false);
+      return;
     }
+
+    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
+
+    router.push(hasVerifiedTotp ? '/auth/verify' : '/dashboard');
   }
 
   async function handleForgotPassword(e: React.FormEvent) {

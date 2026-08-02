@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe, STRIPE_PRICES } from '@/lib/stripe/client';
-import { checkoutSchema } from '@/lib/validation/schemas';
 
 /**
  * Cria uma sessão de Checkout do Stripe para o tenant do usuário logado
@@ -14,15 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
 
-  // V6: validação Zod — usa enum, ignora payloads extras
-  const body = await req.json().catch(() => null);
-  const parsed = checkoutSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Plano inválido.' }, { status: 400 });
-  }
-  const plan = parsed.data.plan as keyof typeof STRIPE_PRICES;
+  const { plan } = (await req.json()) as { plan: keyof typeof STRIPE_PRICES };
   if (!STRIPE_PRICES[plan]) {
-    return NextResponse.json({ error: 'Plano indisponível no momento.' }, { status: 400 });
+    return NextResponse.json({ error: 'Plano inválido.' }, { status: 400 });
   }
 
   const { data: profile } = await supabase
