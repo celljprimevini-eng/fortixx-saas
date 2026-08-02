@@ -64,11 +64,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 4. Decide redirect: tem TOTP verificado? → /auth/verify (challenge)
-  //    Senão → /dashboard.
+  // 4. Decide redirect:
+  //    - Tem TOTP enrolled mas não verificado nesta sessão → /auth/verify (challenge)
+  //    - Sem TOTP enrolled → /auth/setup-2fa (forçar setup antes do dashboard)
+  //    - Tem TOTP verificado → /dashboard
   const { data: factorsData } = await supabase.auth.mfa.listFactors();
   const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
-  const redirect = hasVerifiedTotp ? '/auth/verify' : '/dashboard';
+  const hasUnverifiedTotp = factorsData?.totp?.some((f) => f.status === 'unverified');
+  let redirect: string;
+  if (!hasVerifiedTotp && !hasUnverifiedTotp) {
+    redirect = '/auth/setup-2fa'; // força setup inicial
+  } else if (hasVerifiedTotp) {
+    redirect = '/auth/verify'; // challenge
+  } else {
+    redirect = '/dashboard'; // fator não verificado (raro)
+  }
 
   return NextResponse.json({ success: true, redirect });
 }
