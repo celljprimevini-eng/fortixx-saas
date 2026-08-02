@@ -10,13 +10,14 @@ import { createClient } from '@/lib/supabase/client';
  * do Google Authenticator / 1Password / Authy.
  *
  * Fluxo:
- * 1. Chama supabase.auth.mfa.enroll({factorType: 'totp', friendlyName: 'Fortixx'})
- * 2. Recebe {qr_code (SVG string), secret, factor.id}
- * 3. Mostra QR Code na tela
- * 4. Usuário escaneia com app autenticador, digita código de 6 dígitos
- * 5. Chama supabase.auth.mfa.verify({factorId, challengeId, code})
+ * 1. Verifica que tem sessão ativa (sem isso, enroll() falha)
+ * 2. Chama supabase.auth.mfa.enroll({factorType: 'totp', friendlyName: 'Fortixx'})
+ * 3. Recebe {qr_code (SVG string), secret, factor.id}
+ * 4. Mostra QR Code na tela
+ * 5. Usuário escaneia com app autenticador, digita código de 6 dígitos
+ * 6. Chama supabase.auth.mfa.verify({factorId, challengeId, code})
  *    - challengeId vem de supabase.auth.mfa.challenge({factorId})
- * 6. Se OK → /dashboard
+ * 7. Se OK → /dashboard
  */
 export default function Setup2FAPage() {
   const router = useRouter();
@@ -31,23 +32,62 @@ export default function Setup2FAPage() {
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     async function enroll() {
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'Fortixx',
-      });
-      if (enrollError || !data) {
-        setError('Falha ao gerar QR Code. Faça login novamente.');
-        setLoading(false);
-        return;
+      try {
+        // 1. Verificar que tem sessão (sem isso, mfa.enroll retorna 401)
+        const { data: userData, error: userErr } = await supabase.auth.getUser();
+        if (userErr || !userData?.user) {
+          if (mounted) {
+            setError('Sessão expirou. Faça login novamente.');
+            setLoading(false);
+            setTimeout(() => router.push('/auth/login'), 1500);
+          }
+          return;
+        }
+
+        // 2. Se já tem TOTP enrolled, redireciona direto pro dashboard
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
+        if (hasVerifiedTotp) {
+          router.push('/dashboard');
+          return;
+        }
+
+        // 3. Enroll novo fator TOTP
+        const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+          factorType: 'totp',
+          friendlyName: 'Fortixx',
+        });
+
+        if (enrollError || !data) {
+          console.error('[setup-2fa] enroll failed:', enrollError);
+          if (mounted) {
+            setError(`Não foi possível gerar QR Code: ${enrollError?.message ?? 'erro desconhecido'}`);
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setQrSvg(data.totp.qr_code);
+          setSecret(data.totp.secret);
+          setFactorId(data.id);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('[setup-2fa] unexpected error:', err);
+        if (mounted) {
+          setError(`Erro inesperado: ${err instanceof Error ? err.message : String(err)}`);
+          setLoading(false);
+        }
       }
-      setQrSvg(data.totp.qr_code);
-      setSecret(data.totp.secret);
-      setFactorId(data.id);
-      setLoading(false);
     }
+
     enroll();
-  }, [supabase]);
+    return () => { mounted = false; };
+  }, [supabase, router]);
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -58,33 +98,36 @@ export default function Setup2FAPage() {
     setVerifying(true);
     setError('');
 
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-      factorId,
-    });
-    if (challengeError || !challenge) {
-      setError('Não foi possível iniciar a verificação.');
-      setVerifying(false);
-      return;
-    }
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId,
+      });
+      if (challengeError || !challenge) {
+        setError(`Não foi possível iniciar verificação: ${challengeError?.message ?? 'erro'}`);
+        setVerifying(false);
+        return;
+      }
 
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.id,
-      code,
-    });
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.id,
+        code,
+      });
 
-    if (verifyError) {
-      setError('Código incorreto. Tente novamente.');
-      setCode('');
+      if (verifyError) {
+        setError(`Código incorreto: ${verifyError.message}`);
+        setCode('');
+        setVerifying(false);
+        return;
+      }
+      router.push('/dashboard');
+    } catch (err) {
+      setError(`Erro: ${err instanceof Error ? err.message : String(err)}`);
       setVerifying(false);
-      return;
     }
-    router.push('/dashboard');
   }
 
-  async function handleSkip() {
-    // Usuário pode pular? Não — login route força setup. Mas se chegou aqui
-    // e desiste, redireciona pra logout.
+  async function handleLogout() {
     await supabase.auth.signOut();
     router.push('/auth/login');
   }
@@ -95,6 +138,23 @@ export default function Setup2FAPage() {
         <div className="login-card-wrap">
           <div className="login-card glass">
             <p className="login-sub">Gerando QR Code...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error && !qrSvg) {
+    return (
+      <main className="login-main">
+        <div className="login-card-wrap">
+          <div className="login-card glass">
+            <span className="login-eyebrow">Erro</span>
+            <h1 className="login-title">Setup 2FA</h1>
+            <p className="login-sub" style={{ color: 'var(--red, #f87171)' }}>{error}</p>
+            <button onClick={handleLogout} className="btn btn-primary" style={{ marginTop: 16 }}>
+              Voltar pro login
+            </button>
           </div>
         </div>
       </main>
@@ -167,7 +227,7 @@ export default function Setup2FAPage() {
           <button
             type="button"
             className="link-accent"
-            onClick={handleSkip}
+            onClick={handleLogout}
             style={{ marginTop: 12, background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Sair

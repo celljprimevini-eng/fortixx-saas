@@ -43,7 +43,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/auth/verify')) {
+  // Rotas /auth/* permitidas para usuário logado (precisam estar logado pra funcionar):
+  //  - /auth/setup-2fa: usuário acabou de logar, precisa cadastrar TOTP
+  //  - /auth/verify: challenge de TOTP em logins seguintes
+  // Qualquer OUTRA rota /auth/* (login, register) → redireciona pro dashboard
+  const isAllowedAuthRoute =
+    request.nextUrl.pathname.startsWith('/auth/setup-2fa') ||
+    request.nextUrl.pathname.startsWith('/auth/verify');
+  if (isAuthRoute && user && !isAllowedAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
