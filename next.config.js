@@ -7,13 +7,10 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // Redirect raiz / → /auth/login (HTTP 307 server-side, funciona sem JS)
-      {
-        source: '/',
-        destination: '/auth/login',
-        permanent: false,
-      },
       // /login → /auth/login (alguns links antigos apontam /login)
+      // O redirect de '/' → '/auth/login' foi REMOVIDO em 2026-08-05:
+      // '/' agora É a landing page (src/app/page.tsx), e o login fica
+      // acessível por clique em "Entrar" / "Já tenho conta" no header.
       {
         source: '/login',
         destination: '/auth/login',
