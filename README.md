@@ -79,10 +79,14 @@ cancelamento e falha de pagamento são todos tratados.
 
 ## O que já está 100% funcional
 
+- Landing pública em `/` (Liquid Glass, conversão para cadastro/login)
 - Cadastro de empresa (cria tenant + admin automaticamente via trigger do banco)
 - Login real (Supabase Auth)
-- 2FA real (TOTP via Supabase MFA) — visual idêntico ao protótipo original,
-  ligado à verificação de verdade
+- Setup inicial de 2FA (TOTP via Supabase MFA, com QR Code e fallback por chave manual)
+- Verificação 2FA em logins seguintes (TOTP real, com a UI animada
+  code-merge / LED chase / success-glow do protótipo)
+- Logo Fortixx vetorial (badge 34×34 gold→amber + wordmark)
+- Particle canvas animado no fundo (respeita prefers-reduced-motion)
 - Dashboard consultando dados reais, isolados por tenant via RLS
 - Portal público de vagas → candidatura → parsing via n8n → pipeline
 - Aprovação de candidato → criação automática de colaborador + onboarding
@@ -91,18 +95,21 @@ cancelamento e falha de pagamento são todos tratados.
 
 ## O que ainda falta (seja honesto sobre isso antes de vender)
 
-- **Visual do dashboard completo**: o design Liquid Glass (partículas,
-  Dock, Ctrl+K, gráficos animados, organograma) existe nos protótipos
-  HTML (`fortixx-plataforma.html`) mas ainda precisa ser portado para
-  componentes React um módulo de cada vez. O dashboard atual
-  (`src/app/dashboard/page.tsx`) é funcional e consulta dados reais, mas
-  é uma versão mínima — a base para portar o resto em cima.
-- **Landing page e página de preços**: idem — o HTML existe
-  (`fortixx-landing.html`), falta portar para rotas Next.js reais com
-  os links de checkout conectados.
-- **Tela de configuração de 2FA**: o fluxo de *verificação* já é real;
-  falta a tela onde o usuário *cadastra* o autenticador pela primeira vez
-  (gerar QR code do segredo TOTP via `supabase.auth.mfa.enroll()`).
+- **Visual completo do dashboard**: o design Liquid Glass (partículas,
+  Dock, Ctrl+K, gráficos animados, organograma) está parcialmente aplicado
+  (logo, particle canvas, design system global). Os módulos visuais do
+  dashboard em si (gráficos, dock de navegação, organograma) existem nos
+  protótipos HTML (`fortixx-plataforma.html`) mas ainda precisam ser
+  portados para componentes React. O dashboard atual
+  (`src/app/dashboard/page.tsx`) já consulta dados reais via RLS, é a
+  base funcional sobre a qual esse visual entra.
+- **Landing completa "Liquid Glass storytelling"**: a versão atual é a
+  base de conversão (hero + 3 pilares + CTA + footer) usando o design
+  system global. O storytelling pesado (storytelling stages, modal IA,
+  Dock de scroll) do protótipo `fortixx-landing.html` pode ser portado
+  em cima desta base quando o material de referência aparecer.
+- **Página de preços pública**: idem — hoje o checkout é via
+  `/api/stripe/checkout`; falta uma `/pricing` com cards comparativos.
 - **OCR real de documentos**: hoje o schema e a rota de upload existem,
   mas a extração de texto de RG/CPF/comprovante ainda não está conectada
   a um serviço de OCR (Tesseract.js, Google Vision, ou AWS Textract).
@@ -115,14 +122,19 @@ cancelamento e falha de pagamento são todos tratados.
 src/
   app/
     api/            → rotas de backend (recrutamento, stripe, webhooks)
-    auth/            → login, verificação 2FA
+    auth/            → login, setup-2fa, verify
     dashboard/       → área logada
     register/        → cadastro de empresa
-  components/        → componentes React reutilizáveis
+    page.tsx         → landing pública (Liquid Glass)
+  components/
+    Logo.tsx         → logo vetorial
+    ParticleCanvas.tsx → fundo vivo com partículas conectadas
+    dashboard/       → componentes do dashboard
   lib/
     supabase/        → clientes (browser, server, admin)
     stripe/          → cliente Stripe
     resend/          → cliente de e-mail
+  middleware.ts      → refresh de sessão + proteção de rotas
   types/database.ts  → tipos TypeScript do schema (sincronizar com `npm run db:types`)
 supabase/
   migrations/        → schema versionado

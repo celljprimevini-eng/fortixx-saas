@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { Logo } from '@/components/Logo';
 
 /**
  * Setup inicial de 2FA (TOTP) — usuário acabou de logar e não tem fator
@@ -135,6 +136,9 @@ export default function Setup2FAPage() {
   if (loading) {
     return (
       <main className="login-main">
+        <header className="login-topbar">
+          <Logo />
+        </header>
         <div className="login-card-wrap">
           <div className="login-card glass">
             <p className="login-sub">Gerando QR Code...</p>
@@ -147,6 +151,9 @@ export default function Setup2FAPage() {
   if (error && !qrSvg) {
     return (
       <main className="login-main">
+        <header className="login-topbar">
+          <Logo />
+        </header>
         <div className="login-card-wrap">
           <div className="login-card glass">
             <span className="login-eyebrow">Erro</span>
@@ -163,6 +170,9 @@ export default function Setup2FAPage() {
 
   return (
     <main className="login-main">
+      <header className="login-topbar">
+        <Logo />
+      </header>
       <div className="login-card-wrap">
         <div className="login-card glass">
           <span className="login-eyebrow">Configuração obrigatória</span>
