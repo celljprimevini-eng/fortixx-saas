@@ -43,6 +43,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Enforça o challenge de 2FA no servidor: sem isso, um usuário com fator
+  // TOTP cadastrado mas ainda não verificado nesta sessão (AAL1) conseguia
+  // pular /auth/verify navegando direto pra /dashboard pela URL — o
+  // redirect da rota de login era só uma sugestão pro client, não uma
+  // barreira real.
+  if (isDashboardRoute && user) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/verify';
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Rotas /auth/* permitidas para usuário logado (precisam estar logado pra funcionar):
   //  - /auth/setup-2fa: usuário acabou de logar, precisa cadastrar TOTP
   //  - /auth/verify: challenge de TOTP em logins seguintes
