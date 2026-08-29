@@ -174,7 +174,12 @@ export default function VerifyPage() {
   }
 
   return (
-    <main className="login-main">
+    <>
+      <div className="ambient" aria-hidden="true">
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+      </div>
+      <main className="login-main">
       <div className="login-card-wrap">
         <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
 
@@ -242,6 +247,7 @@ export default function VerifyPage() {
 
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
