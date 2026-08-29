@@ -175,8 +175,8 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    CODE INPUTS — glow ao digitar, microanimação
 =================================================================== */
 .code-zone { position: relative; }
-.code-input.filled-pulse { animation: codeFillPulse .35s var(--ease); }
-@keyframes codeFillPulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); box-shadow: 0 0 0 4px rgba(91,141,239,.28), 0 0 16px rgba(37,99,235,.4); border-color: var(--blue-light); } 100% { transform: scale(1); } }
+.code-input.filled-pulse { animation: codeFillPulse .4s var(--ease); }
+@keyframes codeFillPulse { 0% { transform: scale(1); } 40% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(251,191,36,.3), 0 0 20px rgba(245,158,11,.5); border-color: var(--gold); } 100% { transform: scale(1); } }
 .code-input.error-state { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.16); }
 .code-input:disabled { opacity: .8; }
 @keyframes shakeX { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
