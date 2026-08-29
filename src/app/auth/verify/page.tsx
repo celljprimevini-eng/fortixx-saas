@@ -87,10 +87,10 @@ export default function VerifyPage() {
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
-    }, 1300);
+    }, 500);
 
-    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 2100);
-    setTimeout(() => setStatusText('Autorizando acesso...'), 2900);
+    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 900);
+    setTimeout(() => setStatusText('Autorizando acesso...'), 1300);
 
     setTimeout(async () => {
       const code = digits.join('');
@@ -120,10 +120,10 @@ export default function VerifyPage() {
         setSuccessGlow(true);
         setTimeout(() => {
           setLeaving(true);
-          setTimeout(() => router.push('/dashboard'), 560);
-        }, 1500);
-      }, 500);
-    }, 3700);
+          setTimeout(() => router.push('/dashboard'), 350);
+        }, 700);
+      }, 300);
+    }, 1700);
   }, [digits, allFilled, verifying, verifyCode, router]);
 
   useEffect(() => {
