@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { Logo } from '@/components/Logo';
 
 /**
  * Página final do fluxo "esqueci minha senha". O link do e-mail de
@@ -68,7 +69,7 @@ export default function ResetPasswordPage() {
 
       <header className="login-topbar">
         <a className="logo" href="/">
-          <span className="logo-badge">F</span>Fortixx
+          <Logo />
         </a>
       </header>
 

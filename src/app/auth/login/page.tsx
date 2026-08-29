@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Logo } from '@/components/Logo';
 
 type Step = 'login' | 'forgot' | 'forgotSent';
 
@@ -75,7 +76,7 @@ export default function LoginPage() {
 
       <header className="login-topbar">
         <a className="logo" href="/">
-          <span className="logo-badge">F</span>Fortixx
+          <Logo />
         </a>
       </header>
 
