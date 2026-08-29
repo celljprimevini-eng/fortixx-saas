@@ -60,10 +60,12 @@ export async function middleware(request: NextRequest) {
   // Rotas /auth/* permitidas para usuário logado (precisam estar logado pra funcionar):
   //  - /auth/setup-2fa: usuário acabou de logar, precisa cadastrar TOTP
   //  - /auth/verify: challenge de TOTP em logins seguintes
+  //  - /auth/reset-password: sessão temporária de recovery (link de "esqueci minha senha")
   // Qualquer OUTRA rota /auth/* (login, register) → redireciona pro dashboard
   const isAllowedAuthRoute =
     request.nextUrl.pathname.startsWith('/auth/setup-2fa') ||
-    request.nextUrl.pathname.startsWith('/auth/verify');
+    request.nextUrl.pathname.startsWith('/auth/verify') ||
+    request.nextUrl.pathname.startsWith('/auth/reset-password');
   if (isAuthRoute && user && !isAllowedAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
