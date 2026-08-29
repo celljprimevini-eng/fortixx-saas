@@ -177,7 +177,6 @@ export default function VerifyPage() {
     <>
       <div className="ambient" aria-hidden="true">
         <div className="orb orb-1" />
-        <div className="orb orb-2" />
       </div>
       <main className="login-main">
       <div className="login-card-wrap">

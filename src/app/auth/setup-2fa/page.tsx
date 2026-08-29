@@ -138,7 +138,6 @@ export default function Setup2FAPage() {
       <>
         <div className="ambient" aria-hidden="true">
           <div className="orb orb-1" />
-          <div className="orb orb-2" />
         </div>
         <main className="login-main">
           <header className="login-topbar">
@@ -159,7 +158,6 @@ export default function Setup2FAPage() {
       <>
         <div className="ambient" aria-hidden="true">
           <div className="orb orb-1" />
-          <div className="orb orb-2" />
         </div>
         <main className="login-main">
           <header className="login-topbar">
@@ -184,7 +182,6 @@ export default function Setup2FAPage() {
     <>
       <div className="ambient" aria-hidden="true">
         <div className="orb orb-1" />
-        <div className="orb orb-2" />
       </div>
       <main className="login-main">
       <header className="login-topbar">
