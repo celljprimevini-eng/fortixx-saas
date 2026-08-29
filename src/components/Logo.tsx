@@ -33,24 +33,20 @@ export function Logo({
       >
         <defs>
           <linearGradient id="logoGold" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FBBF24" />
+            <stop offset="0%" stopColor="#FDE68A" />
+            <stop offset="45%" stopColor="#FBBF24" />
             <stop offset="100%" stopColor="#F59E0B" />
           </linearGradient>
         </defs>
         <rect x="0" y="0" width="34" height="34" rx="11" fill="url(#logoGold)" />
-        <text
-          x="17"
-          y="17"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontFamily="Space Grotesk, Inter, sans-serif"
-          fontWeight={700}
-          fontSize="19"
-          fill="#1a1300"
-          letterSpacing="-0.3"
-        >
-          F
-        </text>
+        {/* Três nós crescendo em diagonal — recrutamento → onboarding → portal.
+            Mesma linguagem visual do ParticleCanvas (pontos conectados) já
+            usado no fundo da landing. */}
+        <line x1="10.2" y1="23" x2="17" y2="15.3" stroke="#1a1300" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="17" y1="15.3" x2="24.6" y2="9.4" stroke="#1a1300" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="10.2" cy="23" r="2.55" fill="#1a1300" />
+        <circle cx="17" cy="15.3" r="3.06" fill="#1a1300" />
+        <circle cx="24.6" cy="9.4" r="3.57" fill="#1a1300" />
       </svg>
       <span
         className={wordmarkClassName}
