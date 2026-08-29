@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Logo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
@@ -88,7 +89,7 @@ export default function RegisterPage() {
 
       <header className="login-topbar">
         <a className="logo" href="/">
-          <span className="logo-badge">F</span>Fortixx
+          <Logo />
         </a>
       </header>
 

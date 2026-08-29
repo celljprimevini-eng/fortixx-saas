@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fortixx — Plataforma de RH</title>
+<meta name="description" content="Plataforma premium de RH: recrutamento, onboarding, portal do colaborador e analytics em um só lugar.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fortixx">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ===================================================================
+   RESET & BASE
+=================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+body, h1, h2, h3, h4, p, ul, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+img, svg { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+table { border-collapse: collapse; width: 100%; }
+input, select { font: inherit; color: inherit; }
+
+/* ===================================================================
+   THEME TOKENS
+=================================================================== */
+:root {
+  --blue: #2563EB; --blue-light: #5B8DEF; --blue-deep: #173E9E;
+  --gold: #FBBF24; --gold-deep: #B8860B;
+  --green: #34D399; --red: #F87171;
+  --radius-sm: 12px; --radius-md: 18px; --radius-lg: 26px; --radius-xl: 32px;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+html[data-theme="dark"] {
+  --bg: #0A0A0A; --bg-alt: #101216;
+  --surface: rgba(255,255,255,0.055); --surface-strong: rgba(255,255,255,0.09); --surface-soft: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.12); --border-strong: rgba(255,255,255,0.22);
+  --text-1: #FAFAFA; --text-2: rgba(250,250,250,0.7); --text-3: rgba(250,250,250,0.52);
+  --bar-bg: rgba(255,255,255,0.6); --shadow-glass: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35), 0 24px 48px rgba(0,0,0,0.22);
+  --overlay: rgba(5,5,8,0.65);
+}
+html[data-theme="light"] {
+  --bg: #F4F6FB; --bg-alt: #FFFFFF;
+  --surface: rgba(255,255,255,0.78); --surface-strong: rgba(255,255,255,0.95); --surface-soft: rgba(37,99,235,0.035);
+  --border: rgba(15,23,42,0.09); --border-strong: rgba(15,23,42,0.16);
+  --text-1: #0F172A; --text-2: rgba(15,23,42,0.64); --text-3: rgba(15,23,42,0.5);
+  --bar-bg: rgba(15,23,42,0.7); --shadow-glass: 0 1px 2px rgba(15,23,42,0.04), 0 8px 20px rgba(15,23,42,0.06), 0 24px 40px rgba(15,23,42,0.07);
+  --overlay: rgba(20,20,30,0.35);
+}
+body { background: var(--bg); color: var(--text-1); font-family: var(--font-body); -webkit-font-smoothing: antialiased; overflow-x: hidden; transition: background .4s var(--ease), color .4s var(--ease); }
+
+.glass { background: var(--surface); border: 1px solid var(--border); backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); box-shadow: var(--shadow-glass); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-weight: 600; font-size: 0.88rem; padding: 11px 20px; border-radius: 100px; border: 1px solid transparent; cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease), opacity .2s; white-space: nowrap; position: relative; overflow: hidden; }
+.btn-ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: rippleExpand .6s ease-out forwards; pointer-events: none; }
+@keyframes rippleExpand { to { transform: scale(1); opacity: 0; } }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--blue); color: #fff; box-shadow: 0 8px 24px rgba(37,99,235,0.35); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(37,99,235,0.42); }
+.btn-gold { background: linear-gradient(135deg, var(--gold), #F59E0B); color: #1a1300; box-shadow: 0 6px 18px rgba(251,191,36,0.35); }
+.btn-ghost { background: var(--surface); border-color: var(--border); color: var(--text-1); }
+.btn-ghost:hover { background: var(--surface-strong); }
+.btn-sm { padding: 8px 16px; font-size: 0.82rem; }
+.btn-danger-ghost { background: transparent; border-color: var(--border); color: var(--red); }
+.btn[disabled] { opacity: .45; cursor: default; pointer-events: none; }
+.icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; position: relative; flex-shrink: 0; }
+.icon-btn svg { width: 17px; height: 17px; }
+.muted { color: var(--text-3); }
+.svg-ico { width: 16px; height: 16px; flex-shrink: 0; }
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--blue-light); outline-offset: 2px; border-radius: 6px; }
+
+.skip-link {
+  position: absolute; left: 12px; top: -60px; z-index: 200;
+  background: var(--blue); color: #fff; font-weight: 700; font-size: 0.85rem;
+  padding: 10px 18px; border-radius: 100px; transition: top .2s var(--ease);
+}
+.skip-link:focus { top: 12px; }
+
+.ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.16; }
+.orb-a { width: 560px; height: 560px; top: -220px; right: -160px; background: radial-gradient(circle, var(--blue-light), transparent 70%); }
+.orb-b { width: 420px; height: 420px; bottom: -180px; left: -120px; background: radial-gradient(circle, var(--gold), transparent 70%); opacity: 0.1; }
+
+.app-shell { position: relative; min-height: 100vh; z-index: 1; }
+.app-main { max-width: 1280px; margin: 0 auto; padding: 28px 28px 140px; }
+
+.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 18px; padding: 13px 26px; margin: 16px auto 0; max-width: 1280px; border-radius: var(--radius-lg); }
+.topbar-left { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; flex-shrink: 0; }
+.logo-badge { width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0; }
+.logo-badge svg { width: 100%; height: 100%; }
+.topbar-divider { color: var(--text-3); font-weight: 400; }
+.topbar-page-title { color: var(--text-2); font-weight: 600; }
+.topbar-search { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 9px 16px; max-width: 360px; cursor: pointer; text-align: left; }
+.topbar-search:hover { background: var(--surface-strong); }
+.topbar-search svg { width: 16px; height: 16px; color: var(--text-3); flex-shrink: 0; }
+.topbar-search-placeholder { flex: 1; font-size: 0.85rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kbd-hint { font-family: var(--font-mono); font-size: .68rem; color: var(--text-3); border: 1px solid var(--border-strong); border-radius: 6px; padding: 2px 7px; flex-shrink: 0; }
+.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; position: relative; }
+.notif-dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); border: 1.5px solid var(--bg); }
+.dropdown-panel { position: absolute; top: 48px; right: 0; width: 300px; border-radius: var(--radius-md); padding: 10px; display: none; z-index: 60; }
+.dropdown-panel.open { display: block; }
+.dropdown-item { padding: 11px 12px; border-radius: var(--radius-sm); font-size: 0.84rem; cursor: pointer; }
+.dropdown-item:hover { background: var(--surface-strong); }
+.dropdown-item .t { font-weight: 600; margin-bottom: 2px; }
+.dropdown-item .d { color: var(--text-3); font-size: 0.76rem; }
+.notif-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 10px; }
+.link-mark-read { background: none; border: none; color: var(--blue-light); font-size: .74rem; font-weight: 600; cursor: pointer; }
+.notif-tabs { display: flex; gap: 6px; padding: 0 4px 10px; overflow-x: auto; }
+.notif-tab { flex-shrink: 0; font-size: .72rem; font-weight: 600; padding: 6px 11px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--text-3); cursor: pointer; }
+.notif-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.notif-list { max-height: 340px; overflow-y: auto; }
+.notif-item { position: relative; padding-left: 22px; }
+.notif-item.unread::before { content: ''; position: absolute; left: 8px; top: 18px; width: 6px; height: 6px; border-radius: 50%; background: var(--blue-light); }
+.notif-time { font-size: .68rem; color: var(--text-3); margin-top: 4px; }
+.notif-item[hidden] { display: none; }
+.profile-btn { display: flex; align-items: center; gap: 9px; padding: 6px 12px 6px 6px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.avatar-circle { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 0.72rem; color: #fff; background: linear-gradient(135deg, var(--blue), var(--blue-deep)); flex-shrink: 0; }
+.profile-name { font-size: 0.85rem; font-weight: 600; }
+.theme-toggle { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
+.theme-toggle svg { width: 16px; height: 16px; }
+
+.view { display: none; animation: viewIn .4s var(--ease); position: relative; }
+.view.active { display: block; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.view-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin: 30px 0 28px; flex-wrap: wrap; }
+.view-title { font-family: var(--font-display); font-weight: 600; font-size: 1.7rem; }
+.view-sub { font-size: 0.92rem; color: var(--text-2); margin-top: 6px; }
+.view-head-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+.subtabs { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+.subtab { padding: 9px 17px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 0.83rem; font-weight: 600; color: var(--text-2); cursor: pointer; transition: all .2s var(--ease); }
+.subtab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.subview { display: none; }
+.subview.active { display: block; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card { padding: 20px; border-radius: var(--radius-md); position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.kpi-card.accent-blue::before { background: linear-gradient(180deg, var(--blue-light), var(--blue)); }
+.kpi-card.accent-gold::before { background: linear-gradient(180deg, var(--gold), #F59E0B); }
+.kpi-card.accent-warn::before { background: linear-gradient(180deg, #F87171, #B91C1C); }
+.kpi-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.kpi-spark { width: 58px; height: 18px; flex-shrink: 0; opacity: .85; }
+.spark-line { transition: stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1); }
+.kpi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.kpi-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-strong); display: grid; place-items: center; color: var(--blue-light); }
+.kpi-icon svg { width: 18px; height: 18px; }
+.kpi-label { font-size: 0.78rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.kpi-value { font-family: var(--font-mono); font-size: 1.85rem; font-weight: 700; margin-top: 6px; }
+.kpi-delta { font-size: 0.78rem; margin-top: 6px; }
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.flat { color: var(--text-3); }
+.kpi-delta.warn { color: var(--gold-deep); }
+html[data-theme="dark"] .kpi-delta.warn { color: var(--gold); }
+
+.dash-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 16px; }
+.dash-row.thirds { grid-template-columns: repeat(3, 1fr); }
+.panel { padding: 22px; border-radius: var(--radius-md); }
+.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.panel-head h3 { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; }
+.chip-group { display: flex; gap: 6px; }
+.chip { font-size: 0.72rem; font-weight: 600; padding: 5px 11px; border-radius: 100px; background: var(--surface-strong); border: 1px solid var(--border); color: var(--text-3); cursor: pointer; }
+.chip.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+.line-chart-svg { width: 100%; height: 180px; }
+.line-chart-svg path.area { fill: url(#lineGrad); }
+.line-chart-svg path.line { fill: none; stroke: var(--blue-light); stroke-width: 2.4; stroke-linecap: round; }
+.line-chart-svg path.line-glow { fill: none; stroke: var(--blue-light); stroke-width: 5; opacity: .35; filter: blur(5px); }
+.chart-svg-wrap { position: relative; }
+.chart-guide { stroke: var(--border-strong); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.chart-hover-dot { fill: var(--gold); stroke: var(--bg-alt); stroke-width: 2; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.chart-tooltip { position: absolute; transform: translate(-50%, -135%); pointer-events: none; opacity: 0; transition: opacity .15s; background: var(--bg-alt); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 11px; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 24px rgba(0,0,0,.35); z-index: 4; }
+.chart-tooltip.show { opacity: 1; }
+
+.donut-wrap { display: flex; align-items: center; gap: 22px; }
+.donut { width: 124px; height: 124px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(var(--blue) 0% 38%, var(--blue-light) 38% 60%, var(--gold) 60% 78%, var(--surface-strong) 78% 100%); display: grid; place-items: center; transition: transform .25s var(--ease); }
+.donut:hover { transform: scale(1.04); }
+.donut-center-label { width: 72px; height: 72px; border-radius: 50%; background: var(--bg-alt); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: .9rem; }
+.donut-legend { display: flex; flex-direction: column; gap: 10px; font-size: 0.82rem; }
+.donut-legend li { display: flex; align-items: center; gap: 8px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+.mini-list, .feed-list { display: flex; flex-direction: column; gap: 4px; }
+.mini-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.mini-row:last-child { border-bottom: none; }
+.feed-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; font-size: 0.82rem; color: var(--text-2); }
+.feed-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-light); margin-top: 6px; flex-shrink: 0; }
+.feed-time { color: var(--text-3); font-size: 0.72rem; margin-left: auto; flex-shrink: 0; padding-left: 10px; }
+.quick-actions { display: flex; flex-direction: column; gap: 10px; }
+
+.status-pill { font-size: 0.7rem; font-weight: 600; padding: 4px 11px; border-radius: 100px; white-space: nowrap; }
+.status-pill.ok { background: rgba(52,211,153,0.14); color: var(--green); }
+.status-pill.pending { background: rgba(251,191,36,0.14); color: var(--gold-deep); }
+html[data-theme="dark"] .status-pill.pending { color: var(--gold); }
+.status-pill.info { background: rgba(91,141,239,0.14); color: var(--blue-light); }
+.status-pill.danger { background: rgba(248,113,113,0.14); color: var(--red); }
+.status-pill.neutral { background: var(--surface-strong); color: var(--text-2); }
+
+.table-toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.table-toolbar input, .table-toolbar select { padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); font-size: 0.84rem; color: var(--text-1); }
+.table-toolbar input { flex: 1; min-width: 180px; }
+.table-wrap { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+.data-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); padding: 13px 16px; background: var(--surface-soft); border-bottom: 1px solid var(--border); }
+.data-table td { padding: 13px 16px; font-size: 0.86rem; border-bottom: 1px solid var(--border); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--surface-soft); }
+.cell-person { display: flex; align-items: center; gap: 10px; }
+.cell-person .name { font-weight: 600; }
+.cell-person .sub { font-size: 0.74rem; color: var(--text-3); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 0.68rem; padding: 3px 9px; border-radius: 100px; background: var(--surface-strong); color: var(--blue-light); }
+
+.stat-strip { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-pill { flex: 1; min-width: 140px; padding: 14px 18px; border-radius: var(--radius-sm); }
+.stat-pill .v { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 700; }
+.stat-pill .l { font-size: 0.74rem; color: var(--text-3); margin-top: 2px; }
+
+.cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.cal-head h4 { font-family: var(--font-display); font-weight: 600; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-dow { text-align: center; font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; padding-bottom: 6px; }
+.cal-cell { min-height: 64px; border-radius: 10px; background: var(--surface-soft); border: 1px solid var(--border); padding: 6px; font-size: 0.72rem; position: relative; }
+.cal-cell.empty { background: transparent; border-color: transparent; }
+.cal-cell .num { color: var(--text-3); font-weight: 600; }
+.cal-cell.today { border-color: var(--blue-light); }
+.cal-shift { margin-top: 4px; font-size: 0.62rem; padding: 2px 6px; border-radius: 6px; color: #fff; }
+.cal-shift.morning { background: var(--blue); }
+.cal-shift.afternoon { background: var(--gold-deep); }
+html[data-theme="dark"] .cal-shift.afternoon { background: var(--gold); color: #1a1300; }
+.cal-shift.off { background: var(--surface-strong); color: var(--text-2); }
+.week-list { display: flex; flex-direction: column; gap: 8px; }
+.week-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-strong); border: 1px solid var(--border); font-size: .85rem; flex-wrap: wrap; }
+.week-day { font-weight: 600; min-width: 130px; }
+.week-shift { color: var(--text-2); flex: 1; }
+
+.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.kanban-col { display: flex; flex-direction: column; }
+.kanban-col-head { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-3); margin-bottom: 10px; padding: 0 4px; }
+.kanban-count { background: var(--surface-strong); padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+.kanban-dropzone { display: flex; flex-direction: column; gap: 10px; min-height: 120px; padding: 6px; border-radius: var(--radius-sm); transition: background .2s; }
+.kanban-dropzone.drag-over { background: rgba(91,141,239,0.1); outline: 1.5px dashed var(--blue-light); }
+.kanban-card { padding: 13px; border-radius: var(--radius-sm); background: var(--surface-strong); border: 1px solid var(--border); cursor: grab; font-size: 0.82rem; }
+.kanban-card.dragging { opacity: 0.4; }
+@keyframes cardMoved { 0% { box-shadow: 0 0 0 3px rgba(91,141,239,0.55); } 100% { box-shadow: 0 0 0 0 rgba(91,141,239,0); } }
+.kanban-card.card-moved { animation: cardMoved .6s ease-out; }
+.kanban-card strong { display: block; font-size: 0.86rem; margin-bottom: 3px; }
+.kanban-card .role { color: var(--text-3); font-size: 0.76rem; }
+.kanban-card .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+
+.progress-track { height: 7px; border-radius: 100px; background: var(--surface-strong); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--blue), var(--blue-light)); }
+.progress-row { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 7px; color: var(--text-2); }
+
+.onb-emp-card { padding: 18px; border-radius: var(--radius-md); margin-bottom: 12px; }
+.onb-emp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.onb-checklist { margin-top: 14px; display: none; flex-direction: column; gap: 0; }
+.onb-emp-card.expanded .onb-checklist { display: flex; }
+.onb-task { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 0.85rem; }
+.onb-check { width: 19px; height: 19px; border-radius: 6px; border: 1px solid var(--border-strong); display: grid; place-items: center; flex-shrink: 0; font-size: 0.7rem; }
+.onb-task.done .onb-check { background: var(--green); border-color: var(--green); color: #06231a; }
+.onb-task.done .label { color: var(--text-3); text-decoration: line-through; }
+.expand-toggle { background: none; border: none; cursor: pointer; color: var(--text-3); }
+
+.dropzone { border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); padding: 40px 20px; text-align: center; margin-bottom: 22px; }
+.dropzone svg { margin: 0 auto 12px; color: var(--text-3); }
+.dropzone .t { font-weight: 600; }
+.dropzone .d { font-size: 0.82rem; color: var(--text-3); margin-top: 4px; }
+
+.chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; height: 540px; }
+.chat-list { border-radius: var(--radius-md); overflow-y: auto; padding: 10px; }
+.chat-list-item { padding: 12px; border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 4px; }
+.chat-list-item.active { background: var(--surface-strong); }
+.chat-list-item .n { font-weight: 600; font-size: 0.85rem; }
+.chat-list-item .m { font-size: 0.76rem; color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-panel { border-radius: var(--radius-md); display: flex; flex-direction: column; padding: 18px; }
+.chat-panel-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+.chat-bubble { padding: 11px 15px; border-radius: 16px; font-size: 0.86rem; max-width: 76%; line-height: 1.45; }
+.chat-bubble.bot { background: var(--surface-strong); border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
+.chat-bubble.user { background: var(--blue); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-input-row { display: flex; gap: 10px; margin-top: 14px; }
+.chat-input-row input { flex: 1; padding: 12px 16px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--text-1); font-size: 0.86rem; }
+.chat-send { width: 42px; height: 42px; border-radius: 50%; background: var(--blue); color: #fff; border: none; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.chat-send svg { width: 17px; height: 17px; }
+
+.approval-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: var(--radius-md); margin-bottom: 10px; gap: 16px; flex-wrap: wrap; }
+.approval-info .t { font-weight: 600; font-size: 0.9rem; }
+.approval-info .d { font-size: 0.78rem; color: var(--text-3); margin-top: 3px; }
+.approval-actions { display: flex; gap: 8px; align-items: center; }
+
+.funnel { display: flex; flex-direction: column; gap: 8px; }
+.funnel-row { display: flex; align-items: center; gap: 12px; }
+.funnel-label { width: 130px; font-size: 0.8rem; color: var(--text-2); flex-shrink: 0; }
+.funnel-bar-wrap { flex: 1; }
+.funnel-bar { height: 30px; border-radius: 8px; background: linear-gradient(90deg, var(--blue), var(--blue-light)); display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: #fff; font-size: 0.76rem; font-weight: 600; }
+
+.toggle { position: relative; display: inline-block; width: 40px; height: 23px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track { position: absolute; inset: 0; background: var(--surface-strong); border: 1px solid var(--border); border-radius: 100px; cursor: pointer; transition: background .2s; }
+.toggle-track::before { content: ''; position: absolute; width: 17px; height: 17px; left: 2px; top: 2px; background: var(--text-2); border-radius: 50%; transition: transform .2s var(--ease), background .2s; }
+.toggle input:checked + .toggle-track { background: var(--blue); border-color: var(--blue); }
+.toggle input:checked + .toggle-track::before { transform: translateX(17px); background: #fff; }
+
+.perm-card { padding: 20px; border-radius: var(--radius-md); margin-bottom: 14px; }
+.perm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.perm-head .role-name { font-family: var(--font-display); font-weight: 600; }
+.perm-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); font-size: 0.85rem; }
+.perm-row .opts { display: flex; gap: 22px; align-items: center; }
+.perm-row .opt-label { font-size: 0.74rem; color: var(--text-3); display: flex; align-items: center; gap: 7px; }
+
+.cmdk-overlay { position: fixed; inset: 0; z-index: 120; background: var(--overlay); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding: 12vh 20px 20px; }
+.cmdk-overlay.open { display: flex; }
+.cmdk-box { width: 100%; max-width: 560px; border-radius: var(--radius-lg); overflow: hidden; max-height: 64vh; display: flex; flex-direction: column; background: var(--bg-alt); border: 1px solid var(--border-strong); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.cmdk-input-row { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cmdk-input-row svg { width: 18px; height: 18px; color: var(--text-3); flex-shrink: 0; }
+.cmdk-input-row input { flex: 1; background: none; border: none; font-size: 1rem; color: var(--text-1); }
+.cmdk-results { overflow-y: auto; padding: 8px; }
+.cmdk-group-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); padding: 10px 12px 6px; }
+.cmdk-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: .88rem; }
+.cmdk-item.active, .cmdk-item:hover { background: var(--surface-strong); }
+.cmdk-item svg { width: 16px; height: 16px; color: var(--text-3); flex-shrink: 0; }
+.cmdk-item .cmdk-sub { font-size: .74rem; color: var(--text-3); margin-left: auto; flex-shrink: 0; }
+.cmdk-empty { padding: 34px 20px; text-align: center; color: var(--text-3); font-size: .85rem; }
+
+.org-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.org-toolbar input { padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-1); font-size: .84rem; min-width: 200px; }
+.org-zoom-controls { display: flex; gap: 6px; }
+.org-zoom-controls button { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-1); cursor: pointer; font-size: .9rem; font-weight: 700; }
+.org-zoom-controls button:hover { background: var(--surface-strong); }
+#orgZoomReset { width: auto; padding: 0 10px; font-size: .72rem; font-weight: 600; }
+
+.org-viewport { position: relative; width: 100%; height: 520px; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface-soft); cursor: grab; }
+.org-viewport.dragging { cursor: grabbing; }
+.org-canvas { position: absolute; top: 30px; left: 50%; transform: translate(-50%, 0) scale(1); transform-origin: top center; transition: transform .25s var(--ease); padding: 10px 40px 40px; }
+.org-viewport.dragging .org-canvas { transition: none; }
+
+.org-tree, .org-tree ul { list-style: none; margin: 0; padding: 0; position: relative; }
+.org-tree { display: flex; justify-content: center; }
+.org-tree ul { display: flex; padding-top: 34px; position: relative; }
+.org-tree ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--border-strong); width: 0; height: 34px; }
+.org-tree li { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; padding: 34px 14px 0; }
+.org-tree li::before, .org-tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid var(--border-strong); width: 50%; height: 34px; }
+.org-tree li::after { right: auto; left: 50%; border-left: 2px solid var(--border-strong); }
+.org-tree li:only-child { padding-top: 0; }
+.org-tree li:only-child::before, .org-tree li:only-child::after { display: none; }
+.org-tree li:first-child::before, .org-tree li:last-child::after { border: 0 none; }
+.org-tree li:last-child::before { border-right: 2px solid var(--border-strong); border-radius: 0 8px 0 0; }
+.org-tree li:first-child::after { border-radius: 8px 0 0 0; }
+.org-tree > li { padding-top: 0; }
+.org-tree > li::before, .org-tree > li::after { display: none; }
+
+.org-node { display: inline-flex; flex-direction: column; align-items: center; min-width: 152px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--surface-strong); border: 1px solid var(--border); cursor: pointer; transition: transform .25s var(--ease), border-color .25s, box-shadow .25s, opacity .25s; user-select: none; }
+.org-node:hover { transform: translateY(-3px); border-color: var(--blue-light); box-shadow: 0 10px 24px rgba(37,99,235,.18); }
+.org-node .org-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: .8rem; color: #fff; margin-bottom: 8px; }
+.org-name { font-weight: 700; font-size: .85rem; white-space: nowrap; }
+.org-role { font-size: .72rem; color: var(--text-3); margin-top: 2px; white-space: nowrap; }
+.org-node.dimmed { opacity: .22; }
+.org-node.highlighted { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(251,191,36,.25); }
+
+.dash-customize-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 18px 0 6px; flex-wrap: wrap; }
+.dash-customize-hint { font-size: .78rem; margin-bottom: 14px; }
+#dashCustomizeBtn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.kpi-card, .panel { position: relative; transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+.kpi-card::before, .panel::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; z-index: 3; pointer-events: none;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(251,191,36,0.95), rgba(37,99,235,0.5) 45%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .35s var(--ease);
+}
+.kpi-card:hover::before, .panel:hover::before { opacity: 1; }
+.kpi-card:hover, .panel:hover { transform: translateY(-3px); box-shadow: var(--shadow-glass), 0 0 0 1px rgba(37,99,235,0.1); }
+.widget-drag-handle, .widget-hide-btn { display: none; position: absolute; z-index: 3; cursor: pointer; }
+.widget-drag-handle { top: 10px; left: 10px; font-size: 1rem; color: var(--text-3); cursor: grab; }
+.widget-hide-btn { top: 8px; right: 10px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-strong); color: var(--text-2); font-size: .9rem; line-height: 1; }
+.widget-hide-btn:hover { background: rgba(248,113,113,.15); color: var(--red); border-color: rgba(248,113,113,.4); }
+.customizing .widget-drag-handle, .customizing .widget-hide-btn { display: flex; align-items: center; justify-content: center; }
+.customizing .kpi-card, .customizing .panel { outline: 1.5px dashed var(--border-strong); outline-offset: 3px; }
+.customizing .kpi-card[draggable="true"], .customizing .panel[draggable="true"] { cursor: grab; }
+.widget-dragging { opacity: .45; transform: scale(.97) rotate(-1deg); }
+@keyframes widgetSnap { 0% { transform: scale(1.025); } 100% { transform: scale(1); } }
+.widget-snap { animation: widgetSnap .28s var(--ease); }
+.widget-hidden { display: none !important; }
+.widget-restore-tray { display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.widget-restore-tray.show { display: flex; }
+.widget-restore-chip { font-size: .76rem; padding: 6px 12px; border-radius: 100px; background: var(--surface-strong); border: 1px dashed var(--border-strong); color: var(--text-2); cursor: pointer; }
+.widget-restore-chip:hover { border-color: var(--blue-light); color: var(--blue-light); }
+
+.skeleton-overlay { position: absolute; inset: 0; z-index: 10; background: var(--bg); display: flex; flex-direction: column; gap: 16px; padding: inherit; opacity: 1; transition: opacity .3s; pointer-events: none; }
+.skeleton-overlay.fade-out { opacity: 0; }
+.sk-line { border-radius: 6px; background: linear-gradient(90deg, var(--surface-strong) 25%, var(--surface) 50%, var(--surface-strong) 75%); background-size: 200% 100%; animation: skShimmer 1.4s ease-in-out infinite; }
+@keyframes skShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.perm-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.perm-summary-card { padding: 18px; border-radius: var(--radius-md); }
+.perm-summary-stat { margin-top: 14px; font-family: var(--font-mono); font-size: .78rem; font-weight: 600; color: var(--blue-light); }
+.access-matrix td { text-align: center; }
+.access-matrix td:first-child { text-align: left; font-weight: 600; }
+.access-badge { font-size: .7rem; font-weight: 600; padding: 4px 11px; border-radius: 100px; white-space: nowrap; display: inline-block; }
+.access-total { background: var(--blue); color: #fff; }
+.access-edit { background: rgba(37,99,235,.14); color: var(--blue-light); border: 1px solid rgba(37,99,235,.3); }
+.access-view { background: var(--surface-strong); color: var(--text-2); border: 1px solid var(--border); }
+.access-none { background: none; color: var(--text-3); border: 1px dashed var(--border); }
+
+.chart-legend { display: flex; gap: 16px; font-size: .76rem; color: var(--text-3); }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+.bars span { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--blue-light), var(--blue)); transform: scaleY(0); transform-origin: bottom; transition: transform 1.1s var(--ease), filter .2s; }
+.bars.in-view span { transform: scaleY(1); }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue-light); flex-shrink: 0; }
+.legend-dot.dashed { width: 14px; height: 0; border-top: 2px dashed var(--text-3); border-radius: 0; }
+.line-chart-svg path.line-compare { fill: none; stroke: var(--text-3); stroke-width: 1.6; stroke-dasharray: 5 5; opacity: .55; }
+.analytics-bars span { position: relative; cursor: pointer; transition: transform 1.1s var(--ease), filter .2s; }
+.analytics-bars span:hover { filter: brightness(1.25); }
+.dept-rank { display: flex; flex-direction: column; gap: 14px; padding: 6px 0; }
+.dept-rank-row { display: flex; align-items: center; gap: 12px; }
+.dept-rank-name { width: 90px; font-size: .82rem; color: var(--text-2); flex-shrink: 0; }
+.dept-rank-bar-wrap { flex: 1; height: 8px; border-radius: 100px; background: var(--surface-strong); overflow: hidden; }
+.dept-rank-bar { height: 100%; border-radius: 100px; background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform 1s var(--ease); }
+.dept-rank-bar.grown { transform: scaleX(1); }
+.dept-rank-value { width: 44px; text-align: right; font-family: var(--font-mono); font-size: .78rem; font-weight: 600; color: var(--text-2); flex-shrink: 0; }
+.insights-panel ul { margin: 0; }
+.insights-list { display: flex; flex-direction: column; gap: 14px; }
+.insights-list li { display: flex; gap: 12px; align-items: flex-start; font-size: .85rem; color: var(--text-2); line-height: 1.5; }
+.insight-icon { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: .76rem; font-weight: 700; margin-top: 1px; }
+.insight-icon.up { background: rgba(52,211,153,.14); color: var(--green); }
+.insight-icon.warn { background: rgba(251,191,36,.14); color: var(--gold-deep); }
+html[data-theme="dark"] .insight-icon.warn { color: var(--gold); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 4px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-field { display: flex; flex-direction: column; gap: 7px; }
+.form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-2); }
+.form-input { padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-1); font-size: 0.85rem; width: 100%; }
+.form-input:disabled { color: var(--text-3); cursor: not-allowed; opacity: .7; }
+.avatar-upload-row { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+.profile-divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+.company-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.company-card { padding: 20px; border-radius: var(--radius-md); }
+.company-card .badge-active { font-size: 0.66rem; font-weight: 700; color: var(--blue-light); }
+.company-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--surface-strong); display: grid; place-items: center; margin-bottom: 14px; color: var(--blue-light); }
+.company-icon svg { width: 20px; height: 20px; }
+.company-card h4 { font-family: var(--font-display); font-weight: 600; margin-bottom: 4px; }
+.company-card .loc { font-size: 0.8rem; color: var(--text-3); }
+.company-card .count { margin-top: 12px; font-size: 0.82rem; color: var(--text-2); }
+.add-company-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); padding: 20px; color: var(--text-3); cursor: pointer; }
+
+.appearance-options { display: flex; gap: 12px; margin-bottom: 24px; }
+.appear-opt { flex: 1; padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); text-align: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+.appear-opt.active { border-color: var(--blue); background: rgba(37,99,235,0.08); color: var(--blue-light); }
+.swatch-row { display: flex; gap: 14px; }
+.swatch { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-3); }
+.swatch-color { width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--border); }
+
+.drawer-overlay { position: fixed; inset: 0; z-index: 90; background: var(--overlay); backdrop-filter: blur(3px); display: none; align-items: stretch; justify-content: flex-end; }
+.drawer-overlay.open { display: flex; }
+.drawer { width: 100%; max-width: 400px; height: 100%; overflow-y: auto; padding: 28px; background: var(--bg-alt); border-left: 1px solid var(--border-strong); box-shadow: -20px 0 60px rgba(0,0,0,0.35); }
+.drawer-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.drawer-close { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
+.drawer-profile { text-align: center; margin-bottom: 24px; }
+.drawer-avatar { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: #fff; background: linear-gradient(135deg, var(--blue), var(--blue-deep)); margin: 0 auto 14px; }
+.drawer-name { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+.drawer-role { font-size: 0.84rem; color: var(--text-3); margin-top: 3px; }
+.drawer-section { margin-bottom: 22px; }
+.drawer-section h5 { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 10px; }
+.drawer-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.drawer-row:last-child { border-bottom: none; }
+
+.dock-wrap { position: fixed; bottom: 22px; left: 0; right: 0; display: flex; justify-content: center; z-index: 70; pointer-events: none; }
+.dock { pointer-events: all; display: flex; align-items: flex-end; gap: 6px; padding: 10px 14px; border-radius: 28px; }
+.dock-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; background: none; border: none; cursor: pointer; padding: 9px 11px; border-radius: 16px; transition: transform .18s var(--ease); }
+.dock-item svg { width: 21px; height: 21px; color: var(--text-2); transition: color .2s; }
+.dock-item.active svg { color: var(--blue-light); }
+.dock-item.active { background: var(--surface-strong); }
+.dock-active-dot { position: absolute; bottom: 2px; width: 4px; height: 4px; border-radius: 50%; background: var(--blue-light); opacity: 0; }
+.dock-item.active .dock-active-dot { opacity: 1; }
+.dock-label { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(4px); background: var(--bg-alt); border: 1px solid var(--border); color: var(--text-1); font-size: 0.72rem; font-weight: 600; padding: 5px 11px; border-radius: 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; }
+.dock-item:hover .dock-label { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.table-cards { display: none; flex-direction: column; gap: 10px; }
+.table-card { border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); padding: 14px 15px; }
+.table-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.table-card-primary { flex: 1; min-width: 0; }
+.table-card-primary .cell-person { gap: 11px; }
+.table-card-toggle { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-strong); display: grid; place-items: center; flex-shrink: 0; cursor: pointer; }
+.table-card-toggle svg { width: 14px; height: 14px; transition: transform .25s var(--ease); }
+.table-card.expanded .table-card-toggle svg { transform: rotate(180deg); }
+.table-card-details { display: none; margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--border); flex-direction: column; gap: 10px; }
+.table-card.expanded .table-card-details { display: flex; }
+.table-card-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 0.83rem; }
+.table-card-label { color: var(--text-3); font-size: 0.76rem; flex-shrink: 0; }
+.table-card-value { text-align: right; min-width: 0; }
+@media (max-width: 700px) {
+  .table-wrap { display: none; }
+  .table-cards { display: flex; }
+}
+
+.capture-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
+.capture-modal-box { width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius-lg); padding: 26px; background: var(--bg-alt); border: 1px solid var(--border-strong); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+.capture-preview { width: 100%; border-radius: var(--radius-md); overflow: hidden; position: relative; margin-bottom: 18px; background: var(--surface-soft); border: 1px solid var(--border); aspect-ratio: 4/3; display: grid; place-items: center; }
+.capture-preview img { width: 100%; height: 100%; object-fit: cover; }
+.capture-frame { position: absolute; inset: 8%; border: 2px solid var(--gold); border-radius: 10px; opacity: 0; transition: opacity .3s; }
+.capture-frame.show { opacity: 1; animation: framePulse 1.4s ease-in-out infinite; }
+@keyframes framePulse { 0%,100% { border-color: var(--gold); } 50% { border-color: var(--blue-light); } }
+.capture-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.capture-step { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; color: var(--text-3); }
+.capture-step .dot-state { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong); display: grid; place-items: center; flex-shrink: 0; font-size: 0.65rem; transition: all .25s; }
+.capture-step.active { color: var(--text-1); font-weight: 600; }
+.capture-step.active .dot-state { border-color: var(--blue); background: var(--blue); box-shadow: 0 0 0 4px rgba(37,99,235,0.2); }
+.capture-step.done .dot-state { border-color: var(--green); background: var(--green); color: #06231a; }
+.capture-result { display: none; padding: 16px; border-radius: var(--radius-md); background: var(--surface-strong); border: 1px solid var(--border); margin-bottom: 16px; }
+.capture-result.show { display: block; }
+.capture-result .badge-illustrative { font-family: var(--font-mono); font-size: 0.66rem; color: var(--gold-deep); background: rgba(251,191,36,0.12); padding: 3px 9px; border-radius: 100px; display: inline-block; margin-bottom: 10px; }
+html[data-theme="dark"] .capture-result .badge-illustrative { color: var(--gold); }
+
+@media (max-width: 1100px) {
+  .perm-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-row, .dash-row.thirds { grid-template-columns: 1fr; }
+  .kanban-board { grid-template-columns: repeat(2, 1fr); }
+  .company-grid { grid-template-columns: repeat(2, 1fr); }
+  .chat-layout { grid-template-columns: 1fr; height: auto; }
+  .chat-list { max-height: 160px; }
+}
+@media (max-width: 760px) {
+  .perm-summary-grid { grid-template-columns: 1fr; }
+  .dash-customize-bar { flex-direction: column; align-items: stretch; }
+  .dash-customize-bar .chip-group { overflow-x: auto; }
+  .topbar-search { display: none; }
+  .app-main { padding: 22px 16px 152px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .avatar-upload-row { flex-direction: column; text-align: center; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .kanban-board { grid-template-columns: 1fr; }
+  .cal-grid { gap: 4px; }
+  .cal-cell { min-height: 46px; font-size: 0.64rem; }
+  .company-grid { grid-template-columns: 1fr; }
+  .view-head { align-items: flex-start; }
+  .dock-label { display: none; }
+  .profile-name { display: none; }
+  .icon-btn, .theme-toggle { width: 44px; height: 44px; }
+  .dock-item { padding: 12px 13px; }
+  .dock-wrap { bottom: 14px; }
+  .subtab { padding: 11px 16px; }
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+  .table-card-toggle { width: 38px; height: 38px; }
+}
+@media (max-width: 480px) {
+  .cal-shift { font-size: 0; padding: 0; width: 8px; height: 8px; border-radius: 50%; margin: 4px auto 0; }
+  .kpi-value { font-size: 1.6rem; }
+  .view-title { font-size: 1.4rem; }
+  .panel, .kpi-card { padding: 16px; }
+  .capture-modal-box { padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<a href="#mainContent" class="skip-link">Pular para o conteúdo</a>
+
+<div class="ambient" aria-hidden="true"><div class="orb orb-a"></div><div class="orb orb-b"></div></div>
+
+<div class="app-shell">
+
+  <header class="topbar glass">
+    <div class="topbar-left">
+      <span class="logo-badge"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="fBluePlat" x1="0" y1="0" x2="100" y2="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5B8DEF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient><linearGradient id="fWhitePlat" x1="0" y1="0" x2="80" y2="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#C7D2E3"/></linearGradient><linearGradient id="fGoldPlat" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FBBF24"/><stop offset="100%" stop-color="#B8860B"/></linearGradient></defs><path d="M14,14 L88,14 Q94,14 98,20 L88,26 Q84,29 88,32 L98,38 Q94,44 88,44 L14,44 Q8,44 8,38 L8,20 Q8,14 14,14 Z" fill="url(#fBluePlat)"/><path d="M14,50 L66,50 Q72,50 76,56 L66,62 Q62,65 66,68 L76,74 Q72,80 66,80 L14,80 Q8,80 8,74 L8,56 Q8,50 14,50 Z" fill="url(#fWhitePlat)"/><path d="M8,86 L26,86 Q30,86 30,90 L30,102 Q30,106 26,106 L8,106 Z" fill="url(#fGoldPlat)"/></svg></span>
+      <span class="topbar-divider">/</span>
+      <span class="topbar-page-title" id="pageTitle">Início</span>
+    </div>
+    <button class="topbar-search" id="topbarSearchTrigger" type="button" aria-label="Abrir busca global (Ctrl+K)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+      <span class="topbar-search-placeholder">Buscar colaborador, vaga, documento...</span>
+      <kbd class="kbd-hint">Ctrl K</kbd>
+    </button>
+    <div class="topbar-right">
+      <button class="icon-btn" id="notifBtn" aria-label="Notificações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a6 6 0 1 1 12 0c0 3 1 4.5 1.5 5.5H4.5C5 13.5 6 12 6 9Z"/><path d="M9.5 17a2.5 2.5 0 0 0 5 0" stroke-linecap="round"/></svg>
+        <span class="notif-dot"></span>
+      </button>
+      <div class="dropdown-panel glass" id="notifDropdown" role="region" aria-label="Central de notificações" style="width:340px">
+        <div class="notif-head">
+          <strong style="font-size:.86rem">Notificações</strong>
+          <button class="link-mark-read" id="markAllRead" type="button">Marcar todas como lidas</button>
+        </div>
+        <div class="notif-tabs">
+          <button class="notif-tab active" data-cat="todas" type="button">Todas</button>
+          <button class="notif-tab" data-cat="documentos" type="button">Documentos</button>
+          <button class="notif-tab" data-cat="escalas" type="button">Escalas</button>
+          <button class="notif-tab" data-cat="onboarding" type="button">Onboarding</button>
+          <button class="notif-tab" data-cat="sistema" type="button">Sistema</button>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="dropdown-item notif-item unread" data-cat="documentos"><div class="t">Documento processado por IA</div><div class="d">RG e CPF de Bianca Reis — confiança 96%</div><div class="notif-time">9 min atrás</div></div>
+          <div class="dropdown-item notif-item unread" data-cat="escalas"><div class="t">Falta sem justificativa</div><div class="d">Carla Mendes — 09/06, aguardando justificativa</div><div class="notif-time">38 min atrás</div></div>
+          <div class="dropdown-item notif-item unread" data-cat="onboarding"><div class="t">Onboarding concluído</div><div class="d">Bianca Reis finalizou a integração</div><div class="notif-time">1h atrás</div></div>
+          <div class="dropdown-item notif-item" data-cat="documentos"><div class="t">Documento pendente</div><div class="d">Exame admissional de Felipe Tavares</div><div class="notif-time">2h atrás</div></div>
+          <div class="dropdown-item notif-item" data-cat="escalas"><div class="t">Escala confirmada</div><div class="d">12 colaboradores confirmaram leitura da escala de julho</div><div class="notif-time">3h atrás</div></div>
+          <div class="dropdown-item notif-item" data-cat="sistema"><div class="t">Atualização de permissões</div><div class="d">Papel "Gestor" teve permissões alteradas por você</div><div class="notif-time">ontem</div></div>
+          <div class="dropdown-item notif-item" data-cat="onboarding"><div class="t">Nova candidatura</div><div class="d">Marina Souza aplicou para Analista de Marketing</div><div class="notif-time">ontem</div></div>
+          <div class="dropdown-item notif-item" data-cat="sistema"><div class="t">Backup concluído</div><div class="d">Backup diário dos dados realizado com sucesso</div><div class="notif-time">ontem</div></div>
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema">
+        <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.5M12 19v2.5M4.5 12H2M22 12h-2.5M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6" stroke-linecap="round"/></svg>
+        <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="profile-btn" id="profileBtn" aria-label="Menu de perfil" aria-haspopup="menu">
+        <span class="avatar-circle">RH</span>
+        <span class="profile-name">Renata Hauer</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="dropdown-panel glass" id="profileDropdown" style="width:200px" role="menu" aria-label="Menu de perfil">
+        <button class="dropdown-item" id="goToProfile" role="menuitem" style="width:100%;text-align:left;background:none;border:none;cursor:pointer">Meu perfil</button>
+        <button class="dropdown-item" role="menuitem" style="width:100%;text-align:left;background:none;border:none;cursor:pointer">Minha empresa</button>
+        <button class="dropdown-item" role="menuitem" style="width:100%;text-align:left;background:none;border:none;cursor:pointer">Central de ajuda</button>
+        <button class="dropdown-item" role="menuitem" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;color:var(--red)">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="mainContent">
+
+    <!-- ============================================================ INÍCIO ============================================================ -->
+    <section class="view active" id="view-inicio">
+      <div class="view-head">
+        <div>
+          <h1 class="view-title">Boa tarde, Renata 👋</h1>
+          <p class="view-sub">Resumo da operação hoje, 19 de junho de 2026.</p>
+        </div>
+        <div class="view-head-actions">
+          <button class="btn btn-ghost btn-sm">Exportar relatório</button>
+          <button class="btn btn-primary btn-sm">+ Novo comunicado</button>
+        </div>
+      </div>
+
+      <div class="dash-customize-bar">
+        <div class="chip-group" id="dashModeGroup">
+          <span class="chip active" data-mode="padrao">Padrão</span>
+          <span class="chip" data-mode="executivo">Executivo</span>
+          <span class="chip" data-mode="operacional">Operacional</span>
+          <span class="chip" data-mode="analitico">Analítico</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="dashRestoreBtn">Restaurar layout</button>
+          <button class="btn btn-ghost btn-sm" id="dashCustomizeBtn">✏️ Personalizar</button>
+        </div>
+      </div>
+      <p class="muted dash-customize-hint" id="dashCustomizeHint" style="display:none">Arraste pelo ⠿ para reorganizar · clique no × para ocultar um cartão.</p>
+      <div class="widget-restore-tray" id="widgetRestoreTray"></div>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card glass accent-blue" data-widget-id="kpi-colaboradores" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar cartão">×</button>
+          <div class="kpi-top"><span class="kpi-label">Total de colaboradores</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 8a3 3 0 1 1 3.4 2.97M21 20c0-2.3-1.7-4.1-4-4.7" stroke-linecap="round"/></svg></div></div>
+          <div class="kpi-value">1.248</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↑ 4,2% nos últimos 30 dias</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline points="0,16 10,14 20,15 30,10 40,9 50,4 60,3" fill="none" stroke="var(--blue-light)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-gold" data-widget-id="kpi-vagas" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar cartão">×</button>
+          <div class="kpi-top"><span class="kpi-label">Vagas abertas</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></div></div>
+          <div class="kpi-value">18</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↑ 2 esta semana</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline points="0,10 10,12 20,8 30,11 40,7 50,9 60,4" fill="none" stroke="var(--gold)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-blue" data-widget-id="kpi-onboardings" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar cartão">×</button>
+          <div class="kpi-top"><span class="kpi-label">Onboardings ativos</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="kpi-value">32</div>
+          <div class="kpi-bottom"><div class="kpi-delta flat">→ estável</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline points="0,10 10,9 20,11 30,10 40,9 50,10 60,9" fill="none" stroke="var(--text-3)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-warn" data-widget-id="kpi-solicitacoes" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar cartão">×</button>
+          <div class="kpi-top"><span class="kpi-label">Solicitações pendentes</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg></div></div>
+          <div class="kpi-value">9</div>
+          <div class="kpi-bottom"><div class="kpi-delta warn">3 vencem hoje</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline points="0,14 10,11 20,12 30,8 40,9 50,6 60,5" fill="none" stroke="#F87171" stroke-width="1.6"/></svg></div>
+        </div>
+      </div>
+
+      <div class="dash-row" id="dashRowMain">
+        <div class="panel glass" data-widget-id="panel-chart">
+          <button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar painel">×</button>
+          <div class="panel-head">
+            <h3>Crescimento do quadro</h3>
+            <div class="chip-group"><span class="chip">6M</span><span class="chip active">12M</span></div>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="line-chart-svg" id="dashChartSvg" viewBox="0 0 600 180" preserveAspectRatio="none">
+              <defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5B8DEF" stop-opacity="0.35"/><stop offset="100%" stop-color="#5B8DEF" stop-opacity="0"/></linearGradient></defs>
+              <path class="area" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20 L600,180 L0,180 Z"/>
+              <path class="line-glow" id="dashGlowLine" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20"/>
+              <path class="line" id="dashCrispLine" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20"/>
+              <line class="chart-guide" id="dashChartGuide" x1="0" y1="0" x2="0" y2="180"/>
+              <circle class="chart-hover-dot" id="dashHoverDot" cx="0" cy="0" r="4.5"/>
+            </svg>
+            <div class="chart-tooltip" id="dashChartTooltip"></div>
+          </div>
+        </div>
+        <div class="panel glass" data-widget-id="panel-donut">
+          <button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar painel">×</button>
+          <div class="panel-head"><h3>Colaboradores por área</h3></div>
+          <div class="donut-wrap">
+            <div class="donut"><span class="donut-center-label">1.248</span></div>
+            <ul class="donut-legend">
+              <li><span class="dot" style="background:var(--blue)"></span>Operações — 38%</li>
+              <li><span class="dot" style="background:var(--blue-light)"></span>Comercial — 22%</li>
+              <li><span class="dot" style="background:var(--gold)"></span>Tecnologia — 18%</li>
+              <li><span class="dot" style="background:var(--surface-strong);border:1px solid var(--border)"></span>Outras — 22%</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row thirds" id="dashRowBottom">
+        <div class="panel glass" data-widget-id="panel-solicitacoes" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar painel">×</button>
+          <div class="panel-head"><h3>Solicitações pendentes</h3></div>
+          <div class="mini-list">
+            <div class="mini-row"><span>Férias — Pedro Lima</span><span class="status-pill pending">Aguardando</span></div>
+            <div class="mini-row"><span>Declaração — Ana Costa</span><span class="status-pill pending">Aguardando</span></div>
+            <div class="mini-row"><span>Ajuste de ponto — Diego R.</span><span class="status-pill info">Em análise</span></div>
+          </div>
+        </div>
+        <div class="panel glass" data-widget-id="panel-atividade" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar painel">×</button>
+          <div class="panel-head"><h3>Atividade recente</h3></div>
+          <div class="feed-list">
+            <div class="feed-row"><span class="feed-dot"></span>Marina S. iniciou onboarding<span class="feed-time">09:12</span></div>
+            <div class="feed-row"><span class="feed-dot"></span>Vaga "Analista Financeiro" recebeu 3 novas candidaturas<span class="feed-time">08:40</span></div>
+            <div class="feed-row"><span class="feed-dot"></span>Férias de Bianca Reis aprovadas<span class="feed-time">ontem</span></div>
+          </div>
+        </div>
+        <div class="panel glass" data-widget-id="panel-acoes" draggable="false">
+          <span class="widget-drag-handle" title="Arrastar">⠿</span><button class="widget-hide-btn" title="Ocultar" aria-label="Ocultar painel">×</button>
+          <div class="panel-head"><h3>Ações rápidas</h3></div>
+          <div class="quick-actions">
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">+ Nova vaga</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">+ Novo colaborador</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">Revisar aprovações</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ COLABORADORES ============================================================ -->
+    <section class="view" id="view-colaboradores">
+      <div class="view-head">
+        <div><h1 class="view-title">Colaboradores</h1><p class="view-sub">1.248 colaboradores ativos em 3 unidades.</p></div>
+        <div class="view-head-actions"><button class="btn btn-primary btn-sm">+ Novo colaborador</button></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-sub="colab-diretorio">Diretório</button>
+        <button class="subtab" data-sub="colab-escalas">Escalas &amp; Presença</button>
+        <button class="subtab" data-sub="colab-organograma">Hierarquia da Empresa</button>
+      </div>
+
+      <div class="subviews">
+        <div class="subview active" id="colab-diretorio">
+          <div class="table-toolbar">
+            <input placeholder="Buscar por nome ou cargo..." aria-label="Buscar colaborador por nome ou cargo">
+            <select aria-label="Filtrar por departamento"><option>Todos os departamentos</option><option>Operações</option><option>Comercial</option><option>Tecnologia</option></select>
+            <select aria-label="Filtrar por status"><option>Todos os status</option><option>Ativo</option><option>Férias</option><option>Afastado</option></select>
+          </div>
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Colaborador</th><th>Departamento</th><th>Admissão</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">MS</span><div><div class="name">Marina Souza</div><div class="sub">Analista de Marketing</div></div></div></td><td>Comercial</td><td>03/02/2025</td><td><span class="status-pill ok">Ativo</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Marina Souza" data-role="Analista de Marketing" data-dept="Comercial" data-admission="03/02/2025" data-email="marina.souza@fortixx.com" data-phone="(11) 98221-4490">Ver perfil</button></td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">DR</span><div><div class="name">Diego Ramos</div><div class="sub">Dev Backend Jr.</div></div></div></td><td>Tecnologia</td><td>14/08/2024</td><td><span class="status-pill ok">Ativo</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Diego Ramos" data-role="Dev Backend Jr." data-dept="Tecnologia" data-admission="14/08/2024" data-email="diego.ramos@fortixx.com" data-phone="(11) 97744-2210">Ver perfil</button></td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">PL</span><div><div class="name">Pedro Lima</div><div class="sub">Coordenador de Logística</div></div></div></td><td>Operações</td><td>22/11/2022</td><td><span class="status-pill pending">Férias</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Pedro Lima" data-role="Coordenador de Logística" data-dept="Operações" data-admission="22/11/2022" data-email="pedro.lima@fortixx.com" data-phone="(41) 99887-1023">Ver perfil</button></td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">AC</span><div><div class="name">Ana Costa</div><div class="sub">Analista Financeiro</div></div></div></td><td>Operações</td><td>09/05/2023</td><td><span class="status-pill ok">Ativo</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Ana Costa" data-role="Analista Financeiro" data-dept="Operações" data-admission="09/05/2023" data-email="ana.costa@fortixx.com" data-phone="(21) 96650-3387">Ver perfil</button></td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">BR</span><div><div class="name">Bianca Reis</div><div class="sub">Analista de RH</div></div></div></td><td>Tecnologia</td><td>02/06/2026</td><td><span class="status-pill info">Onboarding</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Bianca Reis" data-role="Analista de RH" data-dept="RH" data-admission="02/06/2026" data-email="bianca.reis@fortixx.com" data-phone="(11) 95521-7740">Ver perfil</button></td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">VH</span><div><div class="name">Vitor Hugo</div><div class="sub">Designer de Produto</div></div></div></td><td>Tecnologia</td><td>17/01/2024</td><td><span class="status-pill danger">Afastado</span></td><td><button class="btn btn-ghost btn-sm" data-open-drawer data-name="Vitor Hugo" data-role="Designer de Produto" data-dept="Tecnologia" data-admission="17/01/2024" data-email="vitor.hugo@fortixx.com" data-phone="(11) 94432-8810">Ver perfil</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="colab-escalas">
+          <div class="table-toolbar" style="justify-content:space-between">
+            <div class="chip-group"><span class="chip active">Por colaborador</span><span class="chip">Por equipe</span></div>
+            <button class="btn btn-primary btn-sm">+ Cadastrar escala</button>
+          </div>
+          <div class="stat-strip">
+            <div class="stat-pill glass"><div class="v">94%</div><div class="l">Presença hoje</div></div>
+            <div class="stat-pill glass"><div class="v">6</div><div class="l">Faltas no mês</div></div>
+            <div class="stat-pill glass"><div class="v">3</div><div class="l">Turnos ativos</div></div>
+          </div>
+          <div class="panel glass" style="margin-bottom:16px">
+            <div class="cal-head">
+              <h4>Junho 2026</h4>
+              <div style="display:flex;gap:8px;align-items:center">
+                <div class="chip-group" id="calViewToggle">
+                  <span class="chip active" data-calview="mensal">Mensal</span>
+                  <span class="chip" data-calview="semanal">Semanal</span>
+                </div>
+                <div class="chip-group"><span class="chip">‹</span><span class="chip">›</span></div>
+              </div>
+            </div>
+            <div class="cal-grid" id="calMensal">
+              <div class="cal-dow">Dom</div><div class="cal-dow">Seg</div><div class="cal-dow">Ter</div><div class="cal-dow">Qua</div><div class="cal-dow">Qui</div><div class="cal-dow">Sex</div><div class="cal-dow">Sáb</div>
+              <div class="cal-cell empty"></div><div class="cal-cell"><span class="num">1</span></div><div class="cal-cell"><span class="num">2</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">3</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">4</span><div class="cal-shift afternoon">Tarde</div></div><div class="cal-cell"><span class="num">5</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">6</span><div class="cal-shift off">Folga</div></div>
+              <div class="cal-cell"><span class="num">7</span></div><div class="cal-cell"><span class="num">8</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">9</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">10</span><div class="cal-shift afternoon">Tarde</div></div><div class="cal-cell"><span class="num">11</span><div class="cal-shift afternoon">Tarde</div></div><div class="cal-cell"><span class="num">12</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">13</span><div class="cal-shift off">Folga</div></div>
+              <div class="cal-cell"><span class="num">14</span></div><div class="cal-cell"><span class="num">15</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">16</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">17</span><div class="cal-shift afternoon">Tarde</div></div><div class="cal-cell"><span class="num">18</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell today"><span class="num">19</span><div class="cal-shift morning">Manhã</div></div><div class="cal-cell"><span class="num">20</span><div class="cal-shift off">Folga</div></div>
+            </div>
+            <div class="week-list" id="calSemanal" style="display:none">
+              <div class="week-row"><span class="week-day">Seg 15/06</span><span class="week-shift">Manhã · 08:00–17:00</span><span class="status-pill ok">Confirmado</span></div>
+              <div class="week-row"><span class="week-day">Ter 16/06</span><span class="week-shift">Manhã · 08:00–17:00</span><span class="status-pill ok">Confirmado</span></div>
+              <div class="week-row"><span class="week-day">Qua 17/06</span><span class="week-shift">Tarde · 13:00–22:00</span><span class="status-pill pending">Aguardando leitura</span></div>
+              <div class="week-row"><span class="week-day">Qui 18/06</span><span class="week-shift">Manhã · 08:00–17:00</span><span class="status-pill ok">Confirmado</span></div>
+              <div class="week-row"><span class="week-day">Sex 19/06 · hoje</span><span class="week-shift">Manhã · 08:00–17:00</span><span class="status-pill info">Em andamento</span></div>
+              <div class="week-row"><span class="week-day">Sáb 20/06</span><span class="week-shift">Folga</span><span class="status-pill neutral">—</span></div>
+            </div>
+          </div>
+          <div class="panel glass" style="margin-bottom:16px">
+            <div class="panel-head"><h3>Faltas registradas</h3></div>
+            <div class="table-wrap" style="border:none">
+              <table class="data-table">
+                <thead><tr><th>Colaborador</th><th>Data</th><th>Tipo</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Vitor Hugo</td><td>12/06/2026</td><td>Atestado médico</td><td><span class="status-pill ok">Justificada</span></td></tr>
+                  <tr><td>Carla Mendes</td><td>09/06/2026</td><td>Sem justificativa</td><td><span class="status-pill danger">Pendente</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel glass" style="margin-bottom:16px">
+            <div class="panel-head"><h3>Confirmação de leitura — escala de julho</h3></div>
+            <div class="table-wrap" style="border:none">
+              <table class="data-table">
+                <thead><tr><th>Colaborador</th><th>Status</th><th>Notificado em</th></tr></thead>
+                <tbody>
+                  <tr><td>Marina Souza</td><td><span class="status-pill ok">Confirmado</span></td><td>18/06 · e-mail + app</td></tr>
+                  <tr><td>Diego Ramos</td><td><span class="status-pill pending">Aguardando</span></td><td>18/06 · e-mail</td></tr>
+                  <tr><td>Pedro Lima</td><td><span class="status-pill ok">Confirmado</span></td><td>18/06 · app</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel glass">
+            <div class="panel-head"><h3>Histórico de alterações</h3></div>
+            <div class="feed-list">
+              <div class="feed-row"><span class="feed-dot"></span>Escala de Diego Ramos alterada de Tarde para Manhã, por Renata Hauer<span class="feed-time">17/06</span></div>
+              <div class="feed-row"><span class="feed-dot"></span>Escala de julho publicada para 1.248 colaboradores — e-mail e notificação interna enviados<span class="feed-time">15/06</span></div>
+              <div class="feed-row"><span class="feed-dot"></span>Turno de fim de semana criado para a equipe de Operações<span class="feed-time">10/06</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="colab-organograma">
+          <div class="org-toolbar">
+            <input id="orgSearch" placeholder="Buscar por nome..." aria-label="Buscar pessoa no organograma">
+            <div class="chip-group" id="orgDeptFilter">
+              <span class="chip active" data-dept="todos">Todos</span>
+              <span class="chip" data-dept="rh">RH</span>
+              <span class="chip" data-dept="comercial">Comercial</span>
+              <span class="chip" data-dept="tecnologia">Tecnologia</span>
+              <span class="chip" data-dept="operacoes">Operações</span>
+            </div>
+            <div class="org-zoom-controls">
+              <button id="orgZoomOut" type="button" aria-label="Diminuir zoom">−</button>
+              <button id="orgZoomReset" type="button" aria-label="Restaurar zoom">100%</button>
+              <button id="orgZoomIn" type="button" aria-label="Aumentar zoom">+</button>
+            </div>
+          </div>
+          <p class="muted" style="font-size:.78rem;margin-bottom:14px">Arraste para navegar · role o scroll para aplicar zoom · clique em uma pessoa para ver o perfil.</p>
+
+          <div class="org-viewport" id="orgViewport">
+            <div class="org-canvas" id="orgCanvas">
+              <ul class="org-tree">
+                <li>
+                  <div class="org-node" data-dept="exec" data-dept-label="Diretoria Executiva" data-name="Marcelo Tavares" data-role="CEO" data-email="marcelo.tavares@fortixx.com" data-phone="(11) 90000-0001">
+                    <span class="org-avatar" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">MT</span>
+                    <div class="org-name">Marcelo Tavares</div>
+                    <div class="org-role">CEO</div>
+                  </div>
+                  <ul>
+                    <li>
+                      <div class="org-node" data-dept="rh" data-dept-label="Recursos Humanos" data-name="Renata Hauer" data-role="Diretora de RH" data-email="renata.hauer@fortixx.com" data-phone="(11) 99888-2210">
+                        <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">RH</span>
+                        <div class="org-name">Renata Hauer</div>
+                        <div class="org-role">Diretora de RH</div>
+                      </div>
+                      <ul>
+                        <li>
+                          <div class="org-node" data-dept="rh" data-dept-label="Recursos Humanos" data-name="Lucas Prado" data-role="Gestor de RH" data-email="lucas.prado@fortixx.com" data-phone="(11) 98221-9034">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">LP</span>
+                            <div class="org-name">Lucas Prado</div>
+                            <div class="org-role">Gestor de RH</div>
+                          </div>
+                          <ul>
+                            <li>
+                              <div class="org-node" data-dept="rh" data-dept-label="Recursos Humanos" data-name="Bianca Reis" data-role="Analista de RH" data-email="bianca.reis@fortixx.com" data-phone="(11) 95521-7740">
+                                <span class="org-avatar" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">BR</span>
+                                <div class="org-name">Bianca Reis</div>
+                                <div class="org-role">Analista de RH</div>
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node" data-dept="comercial" data-dept-label="Comercial" data-name="Rafael Tonin" data-role="Diretor Comercial" data-email="rafael.tonin@fortixx.com" data-phone="(41) 99887-1023">
+                        <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">RT</span>
+                        <div class="org-name">Rafael Tonin</div>
+                        <div class="org-role">Diretor Comercial</div>
+                      </div>
+                      <ul>
+                        <li>
+                          <div class="org-node" data-dept="comercial" data-dept-label="Comercial" data-name="Marina Souza" data-role="Analista de Marketing" data-email="marina.souza@fortixx.com" data-phone="(11) 98221-4490">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">MS</span>
+                            <div class="org-name">Marina Souza</div>
+                            <div class="org-role">Analista de Marketing</div>
+                          </div>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node" data-dept="tecnologia" data-dept-label="Tecnologia" data-name="Juliana Prado" data-role="Diretora de Tecnologia" data-email="juliana.prado@fortixx.com" data-phone="(11) 93344-1290">
+                        <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">JP</span>
+                        <div class="org-name">Juliana Prado</div>
+                        <div class="org-role">Diretora de Tecnologia</div>
+                      </div>
+                      <ul>
+                        <li>
+                          <div class="org-node" data-dept="tecnologia" data-dept-label="Tecnologia" data-name="Diego Ramos" data-role="Dev Backend Jr." data-email="diego.ramos@fortixx.com" data-phone="(11) 97744-2210">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">DR</span>
+                            <div class="org-name">Diego Ramos</div>
+                            <div class="org-role">Dev Backend Jr.</div>
+                          </div>
+                        </li>
+                        <li>
+                          <div class="org-node" data-dept="tecnologia" data-dept-label="Tecnologia" data-name="Vitor Hugo" data-role="Designer de Produto" data-email="vitor.hugo@fortixx.com" data-phone="(11) 94432-8810">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">VH</span>
+                            <div class="org-name">Vitor Hugo</div>
+                            <div class="org-role">Designer de Produto</div>
+                          </div>
+                        </li>
+                        <li>
+                          <div class="org-node" data-dept="tecnologia" data-dept-label="Tecnologia" data-name="Felipe Tavares" data-role="Dev Backend Pleno" data-email="felipe.tavares@fortixx.com" data-phone="(11) 92210-8841">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">FT</span>
+                            <div class="org-name">Felipe Tavares</div>
+                            <div class="org-role">Dev Backend Pleno</div>
+                          </div>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node" data-dept="operacoes" data-dept-label="Operações" data-name="Camila Andrade" data-role="Diretora de Operações" data-email="camila.andrade@fortixx.com" data-phone="(11) 91220-7765">
+                        <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">CA</span>
+                        <div class="org-name">Camila Andrade</div>
+                        <div class="org-role">Diretora de Operações</div>
+                      </div>
+                      <ul>
+                        <li>
+                          <div class="org-node" data-dept="operacoes" data-dept-label="Operações" data-name="Pedro Lima" data-role="Coordenador de Logística" data-email="pedro.lima@fortixx.com" data-phone="(41) 99887-1023">
+                            <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">PL</span>
+                            <div class="org-name">Pedro Lima</div>
+                            <div class="org-role">Coordenador de Logística</div>
+                          </div>
+                          <ul>
+                            <li>
+                              <div class="org-node" data-dept="operacoes" data-dept-label="Operações" data-name="Ana Costa" data-role="Analista Financeiro" data-email="ana.costa@fortixx.com" data-phone="(21) 96650-3387">
+                                <span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">AC</span>
+                                <div class="org-name">Ana Costa</div>
+                                <div class="org-role">Analista Financeiro</div>
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ RECRUTAMENTO ============================================================ -->
+    <section class="view" id="view-recrutamento">
+      <div class="view-head">
+        <div><h1 class="view-title">Recrutamento</h1><p class="view-sub">18 vagas abertas · 96 candidatos no pipeline.</p></div>
+        <div class="view-head-actions"><button class="btn btn-primary btn-sm">+ Nova vaga</button></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-sub="recrut-vagas">Vagas</button>
+        <button class="subtab" data-sub="recrut-pipeline">Pipeline</button>
+        <button class="subtab" data-sub="recrut-curriculos">Banco de currículos</button>
+        <button class="subtab" data-sub="recrut-entrevistas">Entrevistas</button>
+        <button class="subtab" data-sub="recrut-aprovacoes">Aprovações</button>
+        <button class="subtab" data-sub="recrut-dashboard">Dashboard</button>
+      </div>
+
+      <div class="subviews">
+        <div class="subview active" id="recrut-vagas">
+          <div class="dash-row thirds">
+            <div class="panel glass"><div class="panel-head"><h3>Analista de Marketing</h3><span class="status-pill ok">Aberta</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">Comercial · São Paulo, SP</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">23 candidaturas</span><button class="btn btn-ghost btn-sm">Ver candidatos</button></div></div>
+            <div class="panel glass"><div class="panel-head"><h3>Dev Backend Pleno</h3><span class="status-pill ok">Aberta</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">Tecnologia · Remoto</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">41 candidaturas</span><button class="btn btn-ghost btn-sm">Ver candidatos</button></div></div>
+            <div class="panel glass"><div class="panel-head"><h3>Analista Financeiro</h3><span class="status-pill ok">Aberta</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">Operações · Curitiba, PR</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">15 candidaturas</span><button class="btn btn-ghost btn-sm">Ver candidatos</button></div></div>
+            <div class="panel glass"><div class="panel-head"><h3>Designer de Produto</h3><span class="status-pill pending">Pausada</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">Tecnologia · São Paulo, SP</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">8 candidaturas</span><button class="btn btn-ghost btn-sm">Ver candidatos</button></div></div>
+            <div class="panel glass"><div class="panel-head"><h3>Coord. de Logística</h3><span class="status-pill ok">Aberta</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">Operações · Recife, PE</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">6 candidaturas</span><button class="btn btn-ghost btn-sm">Ver candidatos</button></div></div>
+            <div class="panel glass"><div class="panel-head"><h3>Analista de RH</h3><span class="status-pill neutral">Encerrada</span></div><p class="muted" style="font-size:.84rem;margin-bottom:14px">RH · São Paulo, SP</p><div class="mini-row" style="border:none;padding:0"><span class="muted" style="font-size:.8rem">Contratado: Bianca Reis</span></div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="recrut-pipeline">
+          <div class="kanban-board">
+            <div class="kanban-col">
+              <div class="kanban-col-head">Triagem <span class="kanban-count">2</span></div>
+              <div class="kanban-dropzone">
+                <div class="kanban-card" id="kc1" draggable="true"><strong>Marina Souza</strong><span class="role">Analista de Marketing</span><div class="meta"><span class="tag">Novo</span></div></div>
+                <div class="kanban-card" id="kc2" draggable="true"><strong>Felipe Tavares</strong><span class="role">Dev Backend Pleno</span><div class="meta"><span class="tag">Novo</span></div></div>
+              </div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-head">Entrevista <span class="kanban-count">2</span></div>
+              <div class="kanban-dropzone">
+                <div class="kanban-card" id="kc3" draggable="true"><strong>Paula Lima</strong><span class="role">Coord. de Logística</span><div class="meta"><span class="tag">Etapa 2</span></div></div>
+                <div class="kanban-card" id="kc4" draggable="true"><strong>Renan Costa</strong><span class="role">Analista Financeiro</span><div class="meta"><span class="tag">Etapa 1</span></div></div>
+              </div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-head">Proposta <span class="kanban-count">1</span></div>
+              <div class="kanban-dropzone">
+                <div class="kanban-card" id="kc5" draggable="true"><strong>Vitor Hugo</strong><span class="role">Designer de Produto</span><div class="meta"><span class="tag">Aguardando</span></div></div>
+              </div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-head">Contratado <span class="kanban-count">1</span></div>
+              <div class="kanban-dropzone">
+                <div class="kanban-card" id="kc6" draggable="true"><strong>Bianca Reis</strong><span class="role">Analista de RH</span><div class="meta"><span class="tag">Concluído</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="recrut-curriculos">
+          <div class="table-toolbar"><input placeholder="Buscar candidato ou habilidade..." aria-label="Buscar candidato ou habilidade"></div>
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Candidato</th><th>Cargo de interesse</th><th>Habilidades</th><th>Data</th></tr></thead>
+              <tbody>
+                <tr><td>Felipe Tavares</td><td>Dev Backend Pleno</td><td><div class="tags"><span class="tag">Node.js</span><span class="tag">PostgreSQL</span></div></td><td>15/06/2026</td></tr>
+                <tr><td>Renan Costa</td><td>Analista Financeiro</td><td><div class="tags"><span class="tag">Excel avançado</span><span class="tag">SAP</span></div></td><td>10/06/2026</td></tr>
+                <tr><td>Juliana Mota</td><td>Designer de Produto</td><td><div class="tags"><span class="tag">Figma</span><span class="tag">Design System</span></div></td><td>08/06/2026</td></tr>
+                <tr><td>Otávio Lins</td><td>Dev Backend Pleno</td><td><div class="tags"><span class="tag">Java</span><span class="tag">AWS</span></div></td><td>05/06/2026</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="recrut-entrevistas">
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Candidato</th><th>Vaga</th><th>Data/Hora</th><th>Entrevistador</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Paula Lima</td><td>Coord. de Logística</td><td>22/06 às 14h00</td><td>Renata Hauer</td><td><span class="status-pill info">Agendada</span></td></tr>
+                <tr><td>Renan Costa</td><td>Analista Financeiro</td><td>23/06 às 10h30</td><td>Lucas Prado</td><td><span class="status-pill info">Agendada</span></td></tr>
+                <tr><td>Felipe Tavares</td><td>Dev Backend Pleno</td><td>20/06 às 16h00</td><td>Renata Hauer</td><td><span class="status-pill pending">A confirmar</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="recrut-aprovacoes">
+          <div class="approval-item glass">
+            <div class="approval-info"><div class="t">Aprovar proposta — Vitor Hugo</div><div class="d">Designer de Produto · Proposta de R$ 9.200/mês</div></div>
+            <div class="approval-actions">
+              <span class="status-pill pending">Pendente</span>
+              <button class="btn btn-primary btn-sm btn-approve">Aprovar</button>
+              <button class="btn btn-danger-ghost btn-sm btn-reject">Recusar</button>
+            </div>
+          </div>
+          <div class="approval-item glass">
+            <div class="approval-info"><div class="t">Abertura de vaga — Analista de Suporte</div><div class="d">Solicitado por Lucas Prado · Tecnologia</div></div>
+            <div class="approval-actions">
+              <span class="status-pill pending">Pendente</span>
+              <button class="btn btn-primary btn-sm btn-approve">Aprovar</button>
+              <button class="btn btn-danger-ghost btn-sm btn-reject">Recusar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="recrut-dashboard">
+          <div class="dash-row">
+            <div class="panel glass">
+              <div class="panel-head"><h3>Funil de conversão</h3></div>
+              <div class="funnel">
+                <div class="funnel-row"><span class="funnel-label">Candidaturas</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%">96</div></div></div>
+                <div class="funnel-row"><span class="funnel-label">Triagem</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:62%">60</div></div></div>
+                <div class="funnel-row"><span class="funnel-label">Entrevista</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:31%">30</div></div></div>
+                <div class="funnel-row"><span class="funnel-label">Proposta</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:12%">11</div></div></div>
+                <div class="funnel-row"><span class="funnel-label">Contratado</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:6%">6</div></div></div>
+              </div>
+            </div>
+            <div class="panel glass">
+              <div class="panel-head"><h3>Tempo médio de contratação</h3></div>
+              <div class="kpi-value" style="font-size:2.4rem">14 dias</div>
+              <p class="muted" style="font-size:.82rem;margin-top:8px">↓ 3 dias em relação ao trimestre anterior</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ ONBOARDING ============================================================ -->
+    <section class="view" id="view-onboarding">
+      <div class="view-head">
+        <div><h1 class="view-title">Onboarding</h1><p class="view-sub">32 integrações em andamento.</p></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-sub="onb-checklist">Checklist</button>
+        <button class="subtab" data-sub="onb-documentos">Documentos</button>
+        <button class="subtab" data-sub="onb-treinamentos">Treinamentos</button>
+        <button class="subtab" data-sub="onb-status">Status de integração</button>
+      </div>
+
+      <div class="subviews">
+        <div class="subview active" id="onb-checklist">
+          <div class="onb-emp-card glass expanded">
+            <div class="onb-emp-top">
+              <div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">BR</span><div><div class="name">Bianca Reis</div><div class="sub">Analista de RH · Dia 8 de 30</div></div></div>
+              <button class="expand-toggle" data-toggle-onb><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+            <div class="progress-row"><span>Progresso</span><span>62%</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width:62%"></div></div>
+            <div class="onb-checklist">
+              <div class="onb-task done"><span class="onb-check">✓</span><span class="label">Assinar contrato digital</span></div>
+              <div class="onb-task done"><span class="onb-check">✓</span><span class="label">Receber equipamentos</span></div>
+              <div class="onb-task done"><span class="onb-check">✓</span><span class="label">Configurar acessos de sistema</span></div>
+              <div class="onb-task"><span class="onb-check"></span><span class="label">Reunião com gestor direto</span></div>
+              <div class="onb-task"><span class="onb-check"></span><span class="label">Concluir treinamento de compliance</span></div>
+            </div>
+          </div>
+          <div class="onb-emp-card glass">
+            <div class="onb-emp-top">
+              <div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">FT</span><div><div class="name">Felipe Tavares</div><div class="sub">Dev Backend Pleno · Dia 1 de 30</div></div></div>
+              <button class="expand-toggle" data-toggle-onb><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+            <div class="progress-row"><span>Progresso</span><span>8%</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width:8%"></div></div>
+            <div class="onb-checklist">
+              <div class="onb-task done"><span class="onb-check">✓</span><span class="label">Assinar contrato digital</span></div>
+              <div class="onb-task"><span class="onb-check"></span><span class="label">Receber equipamentos</span></div>
+              <div class="onb-task"><span class="onb-check"></span><span class="label">Configurar acessos de sistema</span></div>
+              <div class="onb-task"><span class="onb-check"></span><span class="label">Reunião com gestor direto</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="onb-documentos">
+          <div class="dropzone glass">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+            <div class="t">Arraste documentos aqui ou envie pelo celular</div>
+            <div class="d">PDF, JPG ou PNG · até 10MB por arquivo</div>
+            <div class="capture-actions">
+              <button class="btn btn-primary btn-sm" id="btnOpenCamera" type="button">📷 Fotografar documento</button>
+              <button class="btn btn-ghost btn-sm" id="btnOpenGallery" type="button">🖼️ Enviar da galeria</button>
+            </div>
+            <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
+            <input type="file" accept="image/*" id="galleryInput" style="display:none">
+          </div>
+          <div class="table-toolbar">
+            <input id="docsSearch" placeholder="Buscar documento ou colaborador..." aria-label="Buscar documentos">
+            <div class="chip-group" id="docsCatFilter">
+              <span class="chip active" data-cat="todos">Todos</span>
+              <span class="chip" data-cat="identidade">Identidade</span>
+              <span class="chip" data-cat="comprovantes">Comprovantes</span>
+              <span class="chip" data-cat="contratos">Contratos</span>
+            </div>
+          </div>
+          <div class="table-wrap glass">
+            <table class="data-table" id="docsTable">
+              <thead><tr><th>Documento</th><th>Categoria</th><th>Colaborador</th><th>Enviado em</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr data-cat="identidade"><td>RG e CPF</td><td><span class="tag">Identidade</span></td><td>Bianca Reis</td><td>03/06/2026</td><td><span class="status-pill ok">Aprovado</span></td></tr>
+                <tr data-cat="comprovantes"><td>Comprovante de residência</td><td><span class="tag">Comprovantes</span></td><td>Bianca Reis</td><td>03/06/2026</td><td><span class="status-pill ok">Aprovado</span></td></tr>
+                <tr data-cat="contratos"><td>Contrato assinado</td><td><span class="tag">Contratos</span></td><td>Felipe Tavares</td><td>19/06/2026</td><td><span class="status-pill pending">Em análise</span></td></tr>
+                <tr data-cat="comprovantes"><td>Exame admissional</td><td><span class="tag">Comprovantes</span></td><td>Felipe Tavares</td><td>—</td><td><span class="status-pill danger">Pendente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel glass" style="margin-top:16px">
+            <div class="panel-head"><h3>Logs de processamento (IA / OCR)</h3></div>
+            <div class="table-wrap" style="border:none">
+              <table class="data-table">
+                <thead><tr><th>Documento</th><th>Evento</th><th>Confiança</th><th>Data/Hora</th></tr></thead>
+                <tbody>
+                  <tr><td>RG e CPF — Bianca Reis</td><td>OCR concluído · classificado automaticamente</td><td>96%</td><td>03/06 09:14</td></tr>
+                  <tr><td>Comprovante — Bianca Reis</td><td>OCR concluído · classificado automaticamente</td><td>91%</td><td>03/06 09:16</td></tr>
+                  <tr><td>Contrato — Felipe Tavares</td><td>Confiança baixa · aguardando confirmação manual</td><td>78%</td><td>19/06 08:55</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted" style="font-size:.78rem;margin-top:12px">Esses logs e o percentual de confiança vêm da simulação de IA/OCR descrita no fluxo de captura. Numa versão em produção, esse log seria gravado por um serviço real de OCR.</p>
+          </div>
+        </div>
+
+        <div class="subview" id="onb-treinamentos">
+          <div class="dash-row thirds">
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:12px">Compliance e ética</h3><div class="progress-row"><span>Concluído</span><span>100%</span></div><div class="progress-track"><div class="progress-fill" style="width:100%"></div></div></div>
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:12px">Segurança da informação</h3><div class="progress-row"><span>Concluído</span><span>70%</span></div><div class="progress-track"><div class="progress-fill" style="width:70%"></div></div></div>
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:12px">Cultura Fortixx</h3><div class="progress-row"><span>Concluído</span><span>40%</span></div><div class="progress-track"><div class="progress-fill" style="width:40%"></div></div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="onb-status">
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Colaborador</th><th>Dia</th><th>Progresso</th><th>Responsável</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Bianca Reis</td><td>8/30</td><td>62%</td><td>Renata Hauer</td><td><span class="status-pill ok">No prazo</span></td></tr>
+                <tr><td>Felipe Tavares</td><td>1/30</td><td>8%</td><td>Lucas Prado</td><td><span class="status-pill ok">No prazo</span></td></tr>
+                <tr><td>Juliana Mota</td><td>22/30</td><td>74%</td><td>Renata Hauer</td><td><span class="status-pill pending">Atrasado</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ ASSISTENTE RH ============================================================ -->
+    <section class="view" id="view-assistente">
+      <div class="view-head">
+        <div><h1 class="view-title">Assistente RH</h1><p class="view-sub">88% das dúvidas resolvidas automaticamente nos últimos 30 dias.</p></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-sub="ast-atendimento">Atendimento</button>
+        <button class="subtab" data-sub="ast-faq">FAQ inteligente</button>
+        <button class="subtab" data-sub="ast-historico">Histórico</button>
+        <button class="subtab" data-sub="ast-escalonamento">Escalonamento</button>
+      </div>
+
+      <div class="subviews">
+        <div class="subview active" id="ast-atendimento">
+          <div class="chat-layout">
+            <div class="chat-list glass">
+              <div class="chat-list-item active"><div class="n">Pedro Lima</div><div class="m">Quantos dias de férias eu já acumulei?</div></div>
+              <div class="chat-list-item"><div class="n">Ana Costa</div><div class="m">Onde vejo meu holerite de junho?</div></div>
+              <div class="chat-list-item"><div class="n">Diego Ramos</div><div class="m">Meu ponto de ontem não foi registrado</div></div>
+            </div>
+            <div class="chat-panel glass">
+              <div class="chat-panel-head"><strong>Pedro Lima</strong><span class="status-pill ok">Resolvido pelo bot</span></div>
+              <div class="chat-log" id="chatLog">
+                <div class="chat-bubble user">Quantos dias de férias eu já acumulei?</div>
+                <div class="chat-bubble bot">Você tem 18 dias disponíveis, com período aquisitivo até 14/09. Quer que eu abra uma solicitação?</div>
+              </div>
+              <div class="chat-input-row">
+                <input id="chatInput" placeholder="Pergunte: quantos colaboradores temos? documentos pendentes? onboardings ativos?" aria-label="Mensagem para o assistente de RH">
+                <button class="chat-send" id="chatSend" aria-label="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="ast-faq">
+          <div class="dash-row thirds">
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:8px">Como solicito férias?</h3><p class="muted" style="font-size:.84rem">No Portal do Colaborador, em Solicitações &gt; Nova solicitação &gt; Férias.</p><div class="muted" style="font-size:.72rem;margin-top:10px">1.243 visualizações</div></div>
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:8px">Onde vejo meu holerite?</h3><p class="muted" style="font-size:.84rem">Em Documentos, dentro do Portal do Colaborador, atualizado todo dia 5.</p><div class="muted" style="font-size:.72rem;margin-top:10px">982 visualizações</div></div>
+            <div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:8px">Como corrijo meu ponto?</h3><p class="muted" style="font-size:.84rem">Abra uma solicitação de ajuste de ponto; seu gestor recebe a aprovação automaticamente.</p><div class="muted" style="font-size:.72rem;margin-top:10px">714 visualizações</div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="ast-historico">
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Colaborador</th><th>Assunto</th><th>Data</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Pedro Lima</td><td>Saldo de férias</td><td>19/06/2026</td><td><span class="status-pill ok">Resolvido pelo bot</span></td></tr>
+                <tr><td>Ana Costa</td><td>Holerite de junho</td><td>18/06/2026</td><td><span class="status-pill ok">Resolvido pelo bot</span></td></tr>
+                <tr><td>Diego Ramos</td><td>Ajuste de ponto</td><td>17/06/2026</td><td><span class="status-pill info">Escalado para RH</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="ast-escalonamento">
+          <div class="approval-item glass">
+            <div class="approval-info"><div class="t">Diego Ramos — Ajuste de ponto</div><div class="d">Bot não conseguiu confirmar o horário registrado em 16/06</div></div>
+            <div class="approval-actions"><span class="status-pill danger">Alta prioridade</span><button class="btn btn-primary btn-sm">Responder</button></div>
+          </div>
+          <div class="approval-item glass">
+            <div class="approval-info"><div class="t">Carla Mendes — Falta não justificada</div><div class="d">Colaboradora solicitou revisão da falta de 09/06</div></div>
+            <div class="approval-actions"><span class="status-pill pending">Média prioridade</span><button class="btn btn-primary btn-sm">Responder</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ ANALYTICS ============================================================ -->
+    <section class="view" id="view-analytics">
+      <div class="view-head">
+        <div><h1 class="view-title">Analytics</h1><p class="view-sub">Centro de inteligência de pessoas — comparado ao período anterior.</p></div>
+        <div class="chip-group" id="analyticsPeriodGroup">
+          <span class="chip" data-period="30">30 dias</span>
+          <span class="chip" data-period="90">90 dias</span>
+          <span class="chip active" data-period="365">12 meses</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="analyticsKpiGrid">
+        <div class="kpi-card glass accent-blue">
+          <div class="kpi-top"><span class="kpi-label">Crescimento do quadro</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M11 19V4M18 19v-7" stroke-linecap="round"/></svg></div></div>
+          <div class="kpi-value" data-count-to="4.2" data-count-prefix="+" data-count-suffix="%" data-count-decimals="1">+0,0%</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↑ vs. 3,1% no período anterior</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline class="spark-line" points="0,16 10,14 20,15 30,10 40,9 50,4 60,3" fill="none" stroke="var(--blue-light)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-gold">
+          <div class="kpi-top"><span class="kpi-label">Turnover mensal</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="kpi-value" data-count-to="1.8" data-count-suffix="%" data-count-decimals="1">0,0%</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↓ 0,6pp vs. período anterior</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline class="spark-line" points="0,5 10,7 20,6 30,10 40,12 50,15 60,16" fill="none" stroke="var(--gold)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-blue">
+          <div class="kpi-top"><span class="kpi-label">Tempo de contratação</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg></div></div>
+          <div class="kpi-value" data-count-to="14" data-count-suffix=" dias">0 dias</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↓ 18% vs. período anterior</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline class="spark-line" points="0,4 10,6 20,8 30,9 40,12 50,14 60,16" fill="none" stroke="var(--blue-light)" stroke-width="1.6"/></svg></div>
+        </div>
+        <div class="kpi-card glass accent-warn">
+          <div class="kpi-top"><span class="kpi-label">Satisfação</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/><circle cx="12" cy="12" r="9"/></svg></div></div>
+          <div class="kpi-value" data-count-to="92" data-count-suffix="%">0%</div>
+          <div class="kpi-bottom"><div class="kpi-delta up">↑ 3pp vs. período anterior</div><svg class="kpi-spark" viewBox="0 0 60 20" preserveAspectRatio="none"><polyline class="spark-line" points="0,14 10,13 20,11 30,10 40,8 50,6 60,4" fill="none" stroke="#F87171" stroke-width="1.6"/></svg></div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="panel glass">
+          <div class="panel-head">
+            <h3>Crescimento do quadro</h3>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot" style="background:var(--blue-light)"></span>Período atual</span>
+              <span class="legend-item"><span class="legend-dot dashed"></span>Período anterior</span>
+            </div>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="line-chart-svg" id="analyticsChartSvg" viewBox="0 0 600 180" preserveAspectRatio="none">
+              <defs><linearGradient id="lineGradAnalytics" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5B8DEF" stop-opacity="0.35"/><stop offset="100%" stop-color="#5B8DEF" stop-opacity="0"/></linearGradient></defs>
+              <path fill="url(#lineGradAnalytics)" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20 L600,180 L0,180 Z"/>
+              <path class="line-compare" id="analyticsCompareLine" d="M0,150 C50,148 80,146 140,142 C200,138 220,134 280,128 C340,122 360,116 420,108 C480,100 500,90 600,78"/>
+              <path class="line-glow" id="analyticsGlowLine" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20"/>
+              <path class="line" id="analyticsCrispLine" d="M0,140 C50,137 80,132 140,124 C200,116 220,110 280,98 C340,86 360,76 420,64 C480,52 500,36 600,20"/>
+              <line class="chart-guide" id="analyticsChartGuide" x1="0" y1="0" x2="0" y2="180"/>
+              <circle class="chart-hover-dot" id="analyticsHoverDot" cx="0" cy="0" r="4.5"/>
+            </svg>
+            <div class="chart-tooltip" id="analyticsChartTooltip"></div>
+          </div>
+        </div>
+        <div class="panel glass">
+          <div class="panel-head"><h3>Turnover mensal</h3></div>
+          <div class="bars analytics-bars in-view" id="turnoverBars">
+            <span style="height:60%" data-month="Ago" data-value="2,4%"></span>
+            <span style="height:42%" data-month="Set" data-value="1,9%"></span>
+            <span style="height:38%" data-month="Out" data-value="1,7%"></span>
+            <span style="height:50%" data-month="Nov" data-value="2,1%"></span>
+            <span style="height:28%" data-month="Dez" data-value="1,3%"></span>
+            <span style="height:18%" data-month="Jan" data-value="0,9%"></span>
+          </div>
+          <div class="chart-tooltip" id="turnoverTooltip"></div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="panel glass">
+          <div class="panel-head"><h3>Crescimento por departamento</h3></div>
+          <div class="dept-rank">
+            <div class="dept-rank-row"><span class="dept-rank-name">Tecnologia</span><div class="dept-rank-bar-wrap"><div class="dept-rank-bar" style="width:100%;background:var(--gold)"></div></div><span class="dept-rank-value">+12%</span></div>
+            <div class="dept-rank-row"><span class="dept-rank-name">Comercial</span><div class="dept-rank-bar-wrap"><div class="dept-rank-bar" style="width:74%"></div></div><span class="dept-rank-value">+8%</span></div>
+            <div class="dept-rank-row"><span class="dept-rank-name">Operações</span><div class="dept-rank-bar-wrap"><div class="dept-rank-bar" style="width:58%"></div></div><span class="dept-rank-value">+5%</span></div>
+            <div class="dept-rank-row"><span class="dept-rank-name">RH</span><div class="dept-rank-bar-wrap"><div class="dept-rank-bar" style="width:33%"></div></div><span class="dept-rank-value">+2%</span></div>
+          </div>
+        </div>
+        <div class="panel glass insights-panel">
+          <div class="panel-head"><h3>Insights automáticos</h3></div>
+          <ul class="insights-list">
+            <li><span class="insight-icon up">↑</span><span>Tecnologia foi o departamento que mais cresceu no período, com 12% de novas contratações.</span></li>
+            <li><span class="insight-icon up">↑</span><span>O tempo médio de contratação caiu 18% — o menor valor dos últimos 12 meses.</span></li>
+            <li><span class="insight-icon warn">!</span><span>O turnover de novembro (2,1%) ficou acima da média do período — vale revisar.</span></li>
+            <li><span class="insight-icon up">↑</span><span>96% dos onboardings foram concluídos no prazo, 4pp acima do período anterior.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="dash-row thirds">
+        <div class="panel glass"><div class="panel-head"><h3>Satisfação</h3></div><div class="donut-wrap" style="justify-content:center"><div class="donut" data-target="92" data-donut-color="var(--blue)" style="background:conic-gradient(var(--blue) 0% 0%, var(--surface-strong) 0% 100%)"><span class="donut-center-label">0%</span></div></div></div>
+        <div class="panel glass"><div class="panel-head"><h3>Onboardings no prazo</h3></div><div class="donut-wrap" style="justify-content:center"><div class="donut" data-target="96" data-donut-color="var(--gold)" style="background:conic-gradient(var(--gold) 0% 0%, var(--surface-strong) 0% 100%)"><span class="donut-center-label">0%</span></div></div></div>
+        <div class="panel glass"><div class="panel-head"><h3>Tempo médio de contratação</h3></div><p style="text-align:center;margin-top:20px;font-family:var(--font-mono);font-weight:700;font-size:2.1rem">14 dias</p><p class="muted" style="text-align:center;font-size:.78rem">↓ 18% no período</p></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ CONFIGURAÇÕES ============================================================ -->
+    <section class="view" id="view-config">
+      <div class="view-head">
+        <div><h1 class="view-title">Configurações</h1><p class="view-sub">Usuários, permissões e preferências da conta.</p></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-sub="cfg-usuarios">Usuários</button>
+        <button class="subtab" data-sub="cfg-permissoes">Permissões</button>
+        <button class="subtab" data-sub="cfg-multiempresa">Multiempresa</button>
+        <button class="subtab" data-sub="cfg-logs">Logs</button>
+        <button class="subtab" data-sub="cfg-aparencia">Aparência</button>
+      </div>
+
+      <div class="subviews">
+        <div class="subview active" id="cfg-usuarios">
+          <div class="view-head-actions" style="margin-bottom:16px"><button class="btn btn-primary btn-sm">+ Convidar usuário</button></div>
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Usuário</th><th>Papel</th><th>Status</th><th>Último acesso</th></tr></thead>
+              <tbody>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">RH</span><div><div class="name">Renata Hauer</div><div class="sub">renata.hauer@fortixx.com</div></div></div></td><td><span class="tag">Administrador</span></td><td><span class="status-pill ok">Ativo</span></td><td>Hoje, 13:42</td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">LP</span><div><div class="name">Lucas Prado</div><div class="sub">lucas.prado@fortixx.com</div></div></div></td><td><span class="tag">RH Generalista</span></td><td><span class="status-pill ok">Ativo</span></td><td>Hoje, 09:15</td></tr>
+                <tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue-light),var(--blue))">CO</span><div><div class="name">Camila Oliveira</div><div class="sub">camila.oliveira@fortixx.com</div></div></div></td><td><span class="tag">Gestor</span></td><td><span class="status-pill pending">Convite enviado</span></td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="cfg-permissoes">
+          <div class="perm-summary-grid">
+            <div class="perm-summary-card glass">
+              <span class="tag" style="margin-bottom:8px;display:inline-block">Nível 1 de 4</span>
+              <div class="role-name">Administrador</div>
+              <div class="muted" style="font-size:.78rem;margin-top:2px">Controle total da plataforma</div>
+              <div class="perm-summary-stat">7 / 7 módulos</div>
+            </div>
+            <div class="perm-summary-card glass">
+              <span class="tag" style="margin-bottom:8px;display:inline-block">Nível 2 de 4</span>
+              <div class="role-name">RH</div>
+              <div class="muted" style="font-size:.78rem;margin-top:2px">Gestão completa de pessoas</div>
+              <div class="perm-summary-stat">6 / 7 módulos</div>
+            </div>
+            <div class="perm-summary-card glass">
+              <span class="tag" style="margin-bottom:8px;display:inline-block">Nível 3 de 4</span>
+              <div class="role-name">Gestor</div>
+              <div class="muted" style="font-size:.78rem;margin-top:2px">Apenas a equipe sob sua responsabilidade</div>
+              <div class="perm-summary-stat">5 / 7 módulos</div>
+            </div>
+            <div class="perm-summary-card glass">
+              <span class="tag" style="margin-bottom:8px;display:inline-block">Nível 4 de 4</span>
+              <div class="role-name">Colaborador</div>
+              <div class="muted" style="font-size:.78rem;margin-top:2px">Apenas informações próprias</div>
+              <div class="perm-summary-stat">4 / 7 módulos</div>
+            </div>
+          </div>
+
+          <div class="table-wrap glass" style="margin-top:18px">
+            <table class="data-table access-matrix">
+              <thead><tr><th>Módulo</th><th>Administrador</th><th>RH</th><th>Gestor</th><th>Colaborador</th></tr></thead>
+              <tbody>
+                <tr><td>Início</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-view">Visualizar</span></td><td><span class="access-badge access-view">Visualizar</span></td><td><span class="access-badge access-view">Visualizar</span></td></tr>
+                <tr><td>Colaboradores</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-edit">Editar</span></td><td><span class="access-badge access-view">Equipe</span></td><td><span class="access-badge access-view">Próprio</span></td></tr>
+                <tr><td>Recrutamento</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-edit">Editar</span></td><td><span class="access-badge access-view">Visualizar</span></td><td><span class="access-badge access-none">Sem acesso</span></td></tr>
+                <tr><td>Onboarding</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-edit">Editar</span></td><td><span class="access-badge access-view">Equipe</span></td><td><span class="access-badge access-view">Próprio</span></td></tr>
+                <tr><td>Assistente RH</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-edit">Editar</span></td><td><span class="access-badge access-view">Visualizar</span></td><td><span class="access-badge access-view">Visualizar</span></td></tr>
+                <tr><td>Analytics</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-edit">Editar</span></td><td><span class="access-badge access-view">Equipe</span></td><td><span class="access-badge access-none">Sem acesso</span></td></tr>
+                <tr><td>Configurações</td><td><span class="access-badge access-total">Total</span></td><td><span class="access-badge access-none">Sem acesso</span></td><td><span class="access-badge access-none">Sem acesso</span></td><td><span class="access-badge access-none">Sem acesso</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="muted" style="font-size:.78rem;margin-top:14px">Esta matriz é a estrutura visual de permissões da Fortixx — pronta para guiar a implementação real de autenticação por papel. Hoje ela não bloqueia nada de fato: qualquer pessoa que abrir este arquivo navega por todos os módulos, independente do papel mostrado aqui.</p>
+        </div>
+
+        <div class="subview" id="cfg-multiempresa">
+          <div class="company-grid">
+            <div class="company-card glass">
+              <span class="badge-active">● EMPRESA ATIVA</span>
+              <div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>
+              <h4>Matriz</h4><div class="loc">São Paulo, SP</div>
+              <div class="count">812 colaboradores</div>
+            </div>
+            <div class="company-card glass">
+              <div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>
+              <h4>Filial Curitiba</h4><div class="loc">Curitiba, PR</div>
+              <div class="count">266 colaboradores</div>
+            </div>
+            <div class="company-card glass">
+              <div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>
+              <h4>Filial Recife</h4><div class="loc">Recife, PE</div>
+              <div class="count">170 colaboradores</div>
+            </div>
+            <div class="add-company-card">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+              <span style="font-size:.84rem;font-weight:600">Adicionar empresa</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="cfg-logs">
+          <div class="table-wrap glass">
+            <table class="data-table">
+              <thead><tr><th>Usuário</th><th>Ação</th><th>Data/Hora</th><th>IP</th></tr></thead>
+              <tbody>
+                <tr><td>Renata Hauer</td><td>Aprovou proposta de Vitor Hugo</td><td>19/06/2026 13:40</td><td>187.45.22.10</td></tr>
+                <tr><td>Lucas Prado</td><td>Criou a vaga "Analista de Suporte"</td><td>19/06/2026 11:02</td><td>200.11.88.4</td></tr>
+                <tr><td>Renata Hauer</td><td>Atualizou permissões do papel "Gestor"</td><td>18/06/2026 17:21</td><td>187.45.22.10</td></tr>
+                <tr><td>Camila Oliveira</td><td>Login no sistema</td><td>18/06/2026 09:05</td><td>177.32.4.91</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subview" id="cfg-aparencia">
+          <div class="panel glass" style="max-width:480px">
+            <h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:16px">Tema</h3>
+            <div class="appearance-options">
+              <button class="appear-opt" data-set-theme="light">☀️ Claro</button>
+              <button class="appear-opt active" data-set-theme="dark">🌙 Escuro</button>
+            </div>
+            <h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:14px">Identidade visual</h3>
+            <div class="swatch-row">
+              <div class="swatch"><div class="swatch-color" style="background:#2563EB"></div>Azul Premium</div>
+              <div class="swatch"><div class="swatch-color" style="background:#FBBF24"></div>Dourado Premium</div>
+              <div class="swatch"><div class="swatch-color" style="background:#0A0A0A"></div>Preto Profundo</div>
+              <div class="swatch"><div class="swatch-color" style="background:#FAFAFA;border:1px solid #ddd"></div>Branco Premium</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ MEU PERFIL ============================================================ -->
+    <section class="view" id="view-perfil">
+      <div class="view-head">
+        <div>
+          <button class="btn btn-ghost btn-sm" id="backFromProfile" style="margin-bottom:16px">← Voltar</button>
+          <h1 class="view-title">Meu perfil</h1>
+          <p class="view-sub">Gerencie suas informações pessoais, segurança e preferências de conta.</p>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <div class="panel glass">
+            <div class="panel-head"><h3>Informações pessoais</h3></div>
+            <div class="avatar-upload-row">
+              <div class="drawer-avatar" style="margin:0">RH</div>
+              <div>
+                <button class="btn btn-ghost btn-sm">Alterar foto</button>
+                <p class="muted" style="font-size:.74rem;margin-top:8px">PNG ou JPG, até 2MB</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-field"><label class="form-label" for="pfName">Nome completo</label><input id="pfName" class="form-input" value="Renata Hauer"></div>
+              <div class="form-field"><label class="form-label" for="pfRole">Cargo</label><input id="pfRole" class="form-input" value="Head de RH"></div>
+              <div class="form-field"><label class="form-label" for="pfEmail">E-mail</label><input id="pfEmail" class="form-input" type="email" value="renata.hauer@fortixx.com"></div>
+              <div class="form-field"><label class="form-label" for="pfPhone">Telefone</label><input id="pfPhone" class="form-input" value="(11) 99888-2210"></div>
+              <div class="form-field full"><label class="form-label" for="pfDept">Departamento</label><input id="pfDept" class="form-input" value="Recursos Humanos" disabled></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:18px">
+              <button class="btn btn-primary btn-sm" id="saveProfileBtn">Salvar alterações</button>
+            </div>
+          </div>
+
+          <div class="panel glass">
+            <div class="panel-head"><h3>Segurança</h3></div>
+            <div class="form-grid">
+              <div class="form-field full"><label class="form-label" for="pfPassCurrent">Senha atual</label><input id="pfPassCurrent" class="form-input" type="password" placeholder="••••••••"></div>
+              <div class="form-field"><label class="form-label" for="pfPassNew">Nova senha</label><input id="pfPassNew" class="form-input" type="password" placeholder="••••••••"></div>
+              <div class="form-field"><label class="form-label" for="pfPassConfirm">Confirmar nova senha</label><input id="pfPassConfirm" class="form-input" type="password" placeholder="••••••••"></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button class="btn btn-ghost btn-sm">Atualizar senha</button>
+            </div>
+            <div class="profile-divider"></div>
+            <label class="perm-row" style="border:none;padding:0 0 18px;cursor:pointer">
+              <div>
+                <div style="font-weight:600;font-size:.88rem">Autenticação em duas etapas (2FA)</div>
+                <div class="muted" style="font-size:.78rem;margin-top:3px">Exige um código adicional ao entrar na plataforma.</div>
+              </div>
+              <span class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></span>
+            </label>
+            <h5 style="font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:10px">Sessões ativas</h5>
+            <div class="mini-row"><span>MacBook Pro · São Paulo, BR</span><span class="status-pill ok">Sessão atual</span></div>
+            <div class="mini-row"><span>iPhone 16 · São Paulo, BR</span><button class="btn btn-danger-ghost btn-sm" style="padding:5px 13px">Encerrar</button></div>
+          </div>
+
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <div class="panel glass" style="text-align:center">
+            <div class="drawer-avatar" style="margin:0 auto 14px">RH</div>
+            <div class="drawer-name">Renata Hauer</div>
+            <div class="drawer-role">Head de RH</div>
+            <div style="margin-top:14px"><span class="tag">Administrador</span></div>
+            <div class="profile-divider"></div>
+            <div class="drawer-row"><span class="muted">Empresa</span><span>Fortixx · Matriz</span></div>
+            <div class="drawer-row"><span class="muted">Na plataforma desde</span><span>Fev 2025</span></div>
+          </div>
+
+          <div class="panel glass">
+            <div class="panel-head"><h3>Preferências</h3></div>
+            <div class="form-field" style="margin-bottom:18px">
+              <label class="form-label" for="pfLang">Idioma</label>
+              <select id="pfLang" class="form-input"><option>Português (Brasil)</option><option>English</option><option>Español</option></select>
+            </div>
+            <label class="perm-row" style="border:none;padding:7px 0;cursor:pointer">
+              <span style="font-size:.85rem">Notificações por e-mail</span>
+              <span class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></span>
+            </label>
+            <label class="perm-row" style="padding:7px 0;cursor:pointer">
+              <span style="font-size:.85rem">Notificações push</span>
+              <span class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></span>
+            </label>
+            <label class="perm-row" style="padding:7px 0;cursor:pointer">
+              <span style="font-size:.85rem">Resumo semanal por e-mail</span>
+              <span class="toggle"><input type="checkbox"><span class="toggle-track"></span></span>
+            </label>
+          </div>
+
+          <button class="btn btn-danger-ghost" style="width:100%">Sair de todos os dispositivos</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="dock-wrap">
+    <nav class="dock glass" id="dock" aria-label="Navegação principal">
+      <button class="dock-item active" data-view="view-inicio" data-label="Início" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Início</span>
+      </button>
+      <button class="dock-item" data-view="view-colaboradores" data-label="Colaboradores">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 8a3 3 0 1 1 3.4 2.97M21 20c0-2.3-1.7-4.1-4-4.7" stroke-linecap="round"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Colaboradores</span>
+      </button>
+      <button class="dock-item" data-view="view-recrutamento" data-label="Recrutamento">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Recrutamento</span>
+      </button>
+      <button class="dock-item" data-view="view-onboarding" data-label="Onboarding">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2c2.5 2.5 4 6 4 10 0 1.5-.3 2.8-.8 4M12 2c-2.5 2.5-4 6-4 10 0 1.5.3 2.8.8 4M9 16l-3 5 4-2M15 16l3 5-4-2"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Onboarding</span>
+      </button>
+      <button class="dock-item" data-view="view-assistente" data-label="Assistente RH">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none"/><path d="M12 6V3" stroke-linecap="round"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Assistente RH</span>
+      </button>
+      <button class="dock-item" data-view="view-analytics" data-label="Analytics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M11 19V4M18 19v-7" stroke-linecap="round"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Analytics</span>
+      </button>
+      <button class="dock-item" data-view="view-config" data-label="Configurações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l1.9-1.5-2-3.4-2.3.6a7.6 7.6 0 0 0-1.7-1l-.4-2.4h-4l-.4 2.4a7.6 7.6 0 0 0-1.7 1l-2.3-.6-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-1.9 1.5 2 3.4 2.3-.6c.5.4 1.1.7 1.7 1l.4 2.4h4l.4-2.4a7.6 7.6 0 0 0 1.7-1l2.3.6 2-3.4Z"/></svg>
+        <span class="dock-active-dot"></span><span class="dock-label">Configurações</span>
+      </button>
+    </nav>
+  </div>
+
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <span class="muted" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">Perfil do colaborador</span>
+      <button class="drawer-close" id="drawerClose" aria-label="Fechar perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="drawer-profile">
+      <div class="drawer-avatar" id="drawerAvatar">??</div>
+      <div class="drawer-name" id="drawerName">—</div>
+      <div class="drawer-role" id="drawerRole">—</div>
+    </div>
+    <div class="drawer-section">
+      <h5>Dados</h5>
+      <div class="drawer-row"><span class="muted">Departamento</span><span id="drawerDept">—</span></div>
+      <div class="drawer-row"><span class="muted">Admissão</span><span id="drawerAdmission">—</span></div>
+      <div class="drawer-row"><span class="muted">E-mail</span><span id="drawerEmail">—</span></div>
+      <div class="drawer-row"><span class="muted">Telefone</span><span id="drawerPhone">—</span></div>
+    </div>
+    <div class="drawer-section">
+      <h5>Documentos</h5>
+      <div class="drawer-row"><span>Contrato de trabalho</span><span class="status-pill ok">Aprovado</span></div>
+      <div class="drawer-row"><span>RG e CPF</span><span class="status-pill ok">Aprovado</span></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%">Ver histórico completo</button>
+  </div>
+</div>
+
+<!-- DOCUMENT CAPTURE / OCR DEMO MODAL -->
+<div class="drawer-overlay" id="captureOverlay" style="align-items:center;justify-content:center">
+  <div class="capture-modal-box glass" role="dialog" aria-modal="true" aria-labelledby="captureTitle">
+    <div class="drawer-head">
+      <span id="captureTitle" class="muted" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">Capturar documento</span>
+      <button class="drawer-close" id="captureClose" aria-label="Fechar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <div class="capture-preview" id="capturePreview">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="color:var(--text-3)"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+      <img id="capturePreviewImg" alt="Pré-visualização do documento capturado" style="display:none">
+      <div class="capture-frame" id="captureFrame"></div>
+    </div>
+
+    <div class="capture-steps" id="captureSteps">
+      <div class="capture-step" data-step="crop"><span class="dot-state">1</span>Recortando e corrigindo perspectiva</div>
+      <div class="capture-step" data-step="enhance"><span class="dot-state">2</span>Melhorando qualidade da imagem</div>
+      <div class="capture-step" data-step="ocr"><span class="dot-state">3</span>Lendo o documento (OCR)</div>
+      <div class="capture-step" data-step="classify"><span class="dot-state">4</span>Classificando tipo de documento</div>
+      <div class="capture-step" data-step="save"><span class="dot-state">5</span>Salvando automaticamente</div>
+    </div>
+
+    <div class="capture-result" id="captureResult">
+      <span class="badge-illustrative">Pré-visualização — dados ilustrativos</span>
+      <div style="font-weight:700;margin-bottom:8px" id="captureDocType">Documento identificado: RG / CPF</div>
+      <div class="drawer-row"><span class="muted">Nome detectado</span><span id="captureFieldName">Bianca Reis</span></div>
+      <div class="drawer-row"><span class="muted">Documento</span><span id="captureFieldDoc">000.000.000-00</span></div>
+      <div class="drawer-row"><span class="muted">Confiança da leitura</span><span>96%</span></div>
+    </div>
+
+    <button class="btn btn-gold btn-block" id="captureSaveBtn" style="display:none;width:100%">Adicionar à lista de documentos</button>
+    <p class="modal-disclaimer muted" style="font-size:.78rem;text-align:center;margin-top:10px">A foto é real — a extração por IA é simulada nesta demonstração.</p>
+  </div>
+</div>
+
+<!-- GLOBAL COMMAND PALETTE -->
+<div class="cmdk-overlay" id="cmdkOverlay">
+  <div class="cmdk-box" role="dialog" aria-modal="true" aria-label="Busca global">
+    <div class="cmdk-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+      <input id="cmdkInput" placeholder="Buscar módulos, colaboradores, vagas, documentos..." autocomplete="off" aria-label="Busca global">
+      <kbd class="kbd-hint">Esc</kbd>
+    </div>
+    <div class="cmdk-results" id="cmdkResults"></div>
+  </div>
+</div>
+
+<script>
+// ===================== THEME =====================
+const root = document.documentElement;
+const themeToggle = document.getElementById('themeToggle');
+const iconSun = document.getElementById('iconSun');
+const iconMoon = document.getElementById('iconMoon');
+function setTheme(theme) {
+  root.setAttribute('data-theme', theme);
+  iconSun.style.display = theme === 'dark' ? 'block' : 'none';
+  iconMoon.style.display = theme === 'light' ? 'block' : 'none';
+  document.querySelectorAll('.appear-opt').forEach(b => b.classList.toggle('active', b.dataset.setTheme === theme));
+}
+themeToggle.addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+document.querySelectorAll('.appear-opt').forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.setTheme)));
+
+// ===================== DROPDOWNS =====================
+const notifBtn = document.getElementById('notifBtn');
+const notifDropdown = document.getElementById('notifDropdown');
+const profileBtn = document.getElementById('profileBtn');
+const profileDropdown = document.getElementById('profileDropdown');
+function closeDropdowns(except) {
+  [notifDropdown, profileDropdown].forEach(d => { if (d !== except) d.classList.remove('open'); });
+}
+notifBtn.addEventListener('click', (e) => { e.stopPropagation(); profileDropdown.classList.remove('open'); notifDropdown.classList.toggle('open'); });
+profileBtn.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.remove('open'); profileDropdown.classList.toggle('open'); });
+
+// ===================== NOTIFICATION CENTER =====================
+document.querySelectorAll('.notif-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.notif-tab').forEach((t) => t.classList.remove('active'));
+    tab.classList.add('active');
+    const cat = tab.dataset.cat;
+    document.querySelectorAll('.notif-item').forEach((item) => {
+      item.hidden = cat !== 'todas' && item.dataset.cat !== cat;
+    });
+  });
+});
+document.getElementById('markAllRead').addEventListener('click', () => {
+  document.querySelectorAll('.notif-item.unread').forEach((item) => item.classList.remove('unread'));
+  document.querySelector('.notif-dot').style.display = 'none';
+});
+
+// ===================== DOCUMENTOS: SEARCH + CATEGORY FILTER =====================
+(function () {
+  const docsTable = document.getElementById('docsTable');
+  if (!docsTable) return;
+  const searchInput = document.getElementById('docsSearch');
+  const catFilter = document.getElementById('docsCatFilter');
+  let activeCat = 'todos';
+
+  function applyDocsFilter() {
+    const q = (searchInput.value || '').trim().toLowerCase();
+    docsTable.querySelectorAll('tbody tr').forEach((tr) => {
+      const matchesCat = activeCat === 'todos' || tr.dataset.cat === activeCat;
+      const matchesText = !q || tr.textContent.toLowerCase().includes(q);
+      const visible = matchesCat && matchesText;
+      tr.style.display = visible ? '' : 'none';
+      if (tr.__card) tr.__card.style.display = visible ? '' : 'none';
+    });
+  }
+  searchInput.addEventListener('input', applyDocsFilter);
+  catFilter.querySelectorAll('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      catFilter.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeCat = chip.dataset.cat;
+      applyDocsFilter();
+    });
+  });
+})();
+// ===================== DASHBOARD CUSTOMIZÁVEL =====================
+(function () {
+  const customizeBtn = document.getElementById('dashCustomizeBtn');
+  const inicioView = document.getElementById('view-inicio');
+  if (!customizeBtn || !inicioView) return;
+  const hint = document.getElementById('dashCustomizeHint');
+  const restoreTray = document.getElementById('widgetRestoreTray');
+  const kpiGrid = document.getElementById('kpiGrid');
+  const dashRowBottom = document.getElementById('dashRowBottom');
+
+  function safeStorage() {
+    try { const k = '__fortixx_test__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return localStorage; }
+    catch (e) { return null; }
+  }
+  const store = safeStorage();
+  function saveLayout() {
+    if (!store) return;
+    const order = Array.from(kpiGrid.children).concat(Array.from(dashRowBottom.children)).map((el) => el.dataset.widgetId);
+    const hidden = Array.from(inicioView.querySelectorAll('[data-widget-id].widget-hidden')).map((el) => el.dataset.widgetId);
+    try { store.setItem('fortixx_dash_layout', JSON.stringify({ order, hidden })); } catch (e) { /* ignore */ }
+  }
+  function loadLayout() {
+    if (!store) return null;
+    try { return JSON.parse(store.getItem('fortixx_dash_layout') || 'null'); } catch (e) { return null; }
+  }
+
+  function allWidgets() { return Array.from(inicioView.querySelectorAll('[data-widget-id]')); }
+
+  function refreshRestoreTray() {
+    restoreTray.innerHTML = '';
+    const hiddenWidgets = allWidgets().filter((w) => w.classList.contains('widget-hidden'));
+    restoreTray.classList.toggle('show', hiddenWidgets.length > 0 && inicioView.classList.contains('customizing'));
+    hiddenWidgets.forEach((w) => {
+      const label = w.querySelector('.kpi-label, h3')?.textContent || w.dataset.widgetId;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'widget-restore-chip';
+      chip.textContent = '+ Restaurar: ' + label;
+      chip.addEventListener('click', () => { w.classList.remove('widget-hidden'); refreshRestoreTray(); saveLayout(); });
+      restoreTray.appendChild(chip);
+    });
+  }
+
+  customizeBtn.addEventListener('click', () => {
+    const active = inicioView.classList.toggle('customizing');
+    customizeBtn.classList.toggle('active', active);
+    hint.style.display = active ? 'block' : 'none';
+    allWidgets().forEach((w) => {
+      if (w.querySelector('.widget-drag-handle')) w.setAttribute('draggable', active ? 'true' : 'false');
+    });
+    refreshRestoreTray();
+  });
+
+  inicioView.querySelectorAll('.widget-hide-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const widget = btn.closest('[data-widget-id]');
+      widget.classList.add('widget-hidden');
+      refreshRestoreTray();
+      saveLayout();
+    });
+  });
+
+  [kpiGrid, dashRowBottom].forEach((container) => {
+    let draggedEl = null;
+    container.querySelectorAll('[draggable]').forEach((item) => {
+      item.addEventListener('dragstart', () => { draggedEl = item; item.classList.add('widget-dragging'); });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('widget-dragging');
+        item.classList.add('widget-snap');
+        setTimeout(() => item.classList.remove('widget-snap'), 300);
+        draggedEl = null;
+        saveLayout();
+      });
+    });
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!draggedEl) return;
+      const target = e.target.closest('[data-widget-id]');
+      if (!target || target === draggedEl || target.parentElement !== container) return;
+      const rect = target.getBoundingClientRect();
+      const before = e.clientX < rect.left + rect.width / 2;
+      container.insertBefore(draggedEl, before ? target : target.nextSibling);
+    });
+  });
+
+  const presets = {
+    padrao: { hidden: [] },
+    executivo: { hidden: ['panel-atividade', 'kpi-onboardings'] },
+    operacional: { hidden: ['panel-donut'] },
+    analitico: { hidden: ['panel-acoes', 'kpi-vagas'] },
+  };
+  document.getElementById('dashModeGroup').querySelectorAll('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#dashModeGroup .chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      const preset = presets[chip.dataset.mode] || presets.padrao;
+      allWidgets().forEach((w) => w.classList.toggle('widget-hidden', preset.hidden.includes(w.dataset.widgetId)));
+      refreshRestoreTray();
+      saveLayout();
+    });
+  });
+
+  document.getElementById('dashRestoreBtn').addEventListener('click', () => {
+    allWidgets().forEach((w) => w.classList.remove('widget-hidden'));
+    document.querySelectorAll('#dashModeGroup .chip').forEach((c) => c.classList.remove('active'));
+    document.querySelector('#dashModeGroup .chip[data-mode="padrao"]').classList.add('active');
+    if (store) { try { store.removeItem('fortixx_dash_layout'); } catch (e) {} }
+    refreshRestoreTray();
+  });
+
+  const saved = loadLayout();
+  if (saved) {
+    if (saved.order) {
+      saved.order.forEach((id) => {
+        const el = inicioView.querySelector(`[data-widget-id="${id}"]`);
+        if (el && el.parentElement === kpiGrid) kpiGrid.appendChild(el);
+        else if (el && el.parentElement === dashRowBottom) dashRowBottom.appendChild(el);
+      });
+    }
+    if (saved.hidden) saved.hidden.forEach((id) => inicioView.querySelector(`[data-widget-id="${id}"]`)?.classList.add('widget-hidden'));
+  }
+})();
+
+// ===================== ANALYTICS: dept ranking animation + turnover tooltip =====================
+(function () {
+  const turnoverBars = document.querySelectorAll('#turnoverBars span');
+  const turnoverTooltip = document.getElementById('turnoverTooltip');
+  if (turnoverTooltip) {
+    turnoverBars.forEach((bar) => {
+      bar.addEventListener('mouseenter', () => {
+        turnoverTooltip.textContent = `${bar.dataset.month} — ${bar.dataset.value}`;
+        turnoverTooltip.style.left = bar.offsetLeft + bar.offsetWidth / 2 + 'px';
+        turnoverTooltip.style.top = bar.offsetTop + 'px';
+        turnoverTooltip.classList.add('show');
+      });
+      bar.addEventListener('mouseleave', () => turnoverTooltip.classList.remove('show'));
+    });
+  }
+  let deptAnimated = false;
+  function animateDeptRank() {
+    if (deptAnimated) return;
+    deptAnimated = true;
+    document.querySelectorAll('.dept-rank-bar').forEach((bar, i) => {
+      setTimeout(() => bar.classList.add('grown'), i * 90);
+    });
+  }
+
+  function formatCount(value, decimals, prefix, suffix) {
+    const fixed = value.toFixed(decimals).replace('.', ',');
+    return (prefix || '') + fixed + (suffix || '');
+  }
+  function animateKpiCounts() {
+    document.querySelectorAll('#analyticsKpiGrid [data-count-to]').forEach((el) => {
+      const target = parseFloat(el.dataset.countTo);
+      const decimals = parseInt(el.dataset.countDecimals || '0', 10);
+      const prefix = el.dataset.countPrefix || '';
+      const suffix = el.dataset.countSuffix || '';
+      const start = performance.now();
+      const duration = reduceMotion ? 50 : 1100;
+      function tick(now) {
+        const p = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = formatCount(target * eased, decimals, prefix, suffix);
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+  function animateSparklines() {
+    document.querySelectorAll('#analyticsKpiGrid .spark-line').forEach((line) => {
+      const len = line.getTotalLength();
+      line.style.strokeDasharray = len;
+      line.style.strokeDashoffset = reduceMotion ? 0 : len;
+      requestAnimationFrame(() => requestAnimationFrame(() => { line.style.strokeDashoffset = 0; }));
+    });
+  }
+  function animateDonuts() {
+    document.querySelectorAll('#view-analytics .donut[data-target]').forEach((donut) => {
+      const target = parseFloat(donut.dataset.target);
+      const color = donut.dataset.donutColor;
+      const label = donut.querySelector('.donut-center-label');
+      const start = performance.now();
+      const duration = reduceMotion ? 50 : 1100;
+      function tick(now) {
+        const p = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const pct = (target * eased).toFixed(0);
+        donut.style.background = `conic-gradient(${color} 0% ${pct}%, var(--surface-strong) ${pct}% 100%)`;
+        if (label) label.textContent = pct + '%';
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+  let analyticsAnimated = false;
+  function runAnalyticsEntrance() {
+    if (analyticsAnimated) return;
+    analyticsAnimated = true;
+    animateKpiCounts();
+    animateSparklines();
+    animateDonuts();
+  }
+  document.querySelector('.dock-item[data-view="view-analytics"]')?.addEventListener('click', () => {
+    setTimeout(animateDeptRank, 420);
+    setTimeout(runAnalyticsEntrance, 380);
+  });
+})();
+
+// ===================== ORGANOGRAMA: zoom, pan, search, filtro =====================
+(function () {
+  const viewport = document.getElementById('orgViewport');
+  if (!viewport) return;
+  const canvas = document.getElementById('orgCanvas');
+  let scale = 1, posX = 0, posY = 0, dragging = false, startX = 0, startY = 0;
+
+  function apply() { canvas.style.transform = `translate(-50%, 0) translate(${posX}px, ${posY}px) scale(${scale})`; }
+  function setScale(s) { scale = Math.min(1.8, Math.max(0.45, s)); apply(); }
+
+  viewport.addEventListener('mousedown', (e) => { dragging = true; viewport.classList.add('dragging'); startX = e.clientX - posX; startY = e.clientY - posY; });
+  window.addEventListener('mousemove', (e) => { if (!dragging) return; posX = e.clientX - startX; posY = e.clientY - startY; apply(); });
+  window.addEventListener('mouseup', () => { dragging = false; viewport.classList.remove('dragging'); });
+  viewport.addEventListener('touchstart', (e) => { const t = e.touches[0]; dragging = true; startX = t.clientX - posX; startY = t.clientY - posY; }, { passive: true });
+  viewport.addEventListener('touchmove', (e) => { if (!dragging) return; const t = e.touches[0]; posX = t.clientX - startX; posY = t.clientY - startY; apply(); }, { passive: true });
+  viewport.addEventListener('touchend', () => { dragging = false; });
+  viewport.addEventListener('wheel', (e) => { e.preventDefault(); setScale(scale - e.deltaY * 0.001); }, { passive: false });
+
+  document.getElementById('orgZoomIn').addEventListener('click', () => setScale(scale + 0.15));
+  document.getElementById('orgZoomOut').addEventListener('click', () => setScale(scale - 0.15));
+  document.getElementById('orgZoomReset').addEventListener('click', () => { scale = 1; posX = 0; posY = 0; apply(); });
+
+  document.getElementById('orgSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.org-node').forEach((n) => {
+      n.classList.toggle('highlighted', !!q && n.dataset.name.toLowerCase().includes(q));
+    });
+  });
+
+  document.getElementById('orgDeptFilter').querySelectorAll('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#orgDeptFilter .chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      const dept = chip.dataset.dept;
+      document.querySelectorAll('.org-node').forEach((n) => {
+        const match = dept === 'todos' || n.dataset.dept === dept || n.dataset.dept === 'exec';
+        n.classList.toggle('dimmed', !match);
+      });
+    });
+  });
+
+  document.querySelectorAll('.org-node[data-name]').forEach((node) => {
+    node.addEventListener('click', () => {
+      document.getElementById('drawerName').textContent = node.dataset.name;
+      document.getElementById('drawerRole').textContent = node.dataset.role;
+      document.getElementById('drawerDept').textContent = node.dataset.deptLabel;
+      document.getElementById('drawerAdmission').textContent = '—';
+      document.getElementById('drawerEmail').textContent = node.dataset.email;
+      document.getElementById('drawerPhone').textContent = node.dataset.phone;
+      document.getElementById('drawerAvatar').textContent = node.dataset.name.split(' ').map((n) => n[0]).slice(0, 2).join('');
+      drawerOverlay.classList.add('open');
+    });
+  });
+})();
+// ===================== ESCALAS: MENSAL / SEMANAL TOGGLE =====================
+const calToggle = document.getElementById('calViewToggle');
+if (calToggle) {
+  calToggle.querySelectorAll('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      calToggle.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      const isMensal = chip.dataset.calview === 'mensal';
+      document.getElementById('calMensal').style.display = isMensal ? '' : 'none';
+      document.getElementById('calSemanal').style.display = isMensal ? 'none' : 'flex';
+    });
+  });
+}
+document.addEventListener('click', () => closeDropdowns(null));
+notifDropdown.addEventListener('click', (e) => e.stopPropagation());
+profileDropdown.addEventListener('click', (e) => e.stopPropagation());
+
+// ===================== DOCK NAVIGATION =====================
+const dock = document.getElementById('dock');
+const dockItems = document.querySelectorAll('.dock-item');
+const views = document.querySelectorAll('.view');
+const pageTitle = document.getElementById('pageTitle');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (!reduceMotion) {
+  document.querySelectorAll('.kpi-card, .panel').forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const mx = ((e.clientX - rect.left) / rect.width) * 100;
+      const my = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mx', mx + '%');
+      card.style.setProperty('--my', my + '%');
+    });
+  });
+}
+
+function showViewSkeleton(viewEl) {
+  if (reduceMotion || !viewEl) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'skeleton-overlay';
+  overlay.innerHTML = '<div class="sk-line" style="height:30px;width:35%"></div>' +
+    '<div style="display:flex;gap:16px"><div class="sk-line" style="height:84px;flex:1"></div><div class="sk-line" style="height:84px;flex:1"></div><div class="sk-line" style="height:84px;flex:1"></div></div>' +
+    '<div class="sk-line" style="height:220px;width:100%"></div>';
+  viewEl.appendChild(overlay);
+  setTimeout(() => {
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 280);
+  }, 360);
+}
+dockItems.forEach(item => {
+  item.addEventListener('click', () => {
+    dockItems.forEach(d => { d.classList.remove('active'); d.removeAttribute('aria-current'); });
+    item.classList.add('active');
+    item.setAttribute('aria-current', 'page');
+    views.forEach(v => v.classList.toggle('active', v.id === item.dataset.view));
+    pageTitle.textContent = item.dataset.label;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    showViewSkeleton(document.getElementById(item.dataset.view));
+  });
+});
+
+if (!reduceMotion) {
+  dock.addEventListener('mousemove', (e) => {
+    dockItems.forEach(item => {
+      const rect = item.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const dist = Math.abs(e.clientX - center);
+      const maxDist = 90;
+      const scale = dist < maxDist ? 1 + (1 - dist / maxDist) * 0.32 : 1;
+      const lift = dist < maxDist ? (1 - dist / maxDist) * 10 : 0;
+      item.style.transform = `scale(${scale}) translateY(${-lift}px)`;
+    });
+  });
+  dock.addEventListener('mouseleave', () => dockItems.forEach(item => item.style.transform = ''));
+}
+
+// ===================== SUBTABS (generic) =====================
+document.querySelectorAll('.subtabs').forEach(group => {
+  const buttons = group.querySelectorAll('.subtab');
+  const wrapper = group.nextElementSibling;
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      wrapper.querySelectorAll('.subview').forEach(sv => sv.classList.toggle('active', sv.id === btn.dataset.sub));
+    });
+  });
+});
+
+// ===================== CHIP GROUPS (cosmetic) =====================
+document.querySelectorAll('.chip-group').forEach(group => {
+  group.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (chip.textContent.trim() === '‹' || chip.textContent.trim() === '›') return;
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+});
+
+// ===================== ONBOARDING EXPAND =====================
+document.querySelectorAll('[data-toggle-onb]').forEach(btn => {
+  btn.addEventListener('click', () => btn.closest('.onb-emp-card').classList.toggle('expanded'));
+});
+
+// ===================== KANBAN DRAG & DROP =====================
+document.querySelectorAll('.kanban-card').forEach(card => {
+  card.addEventListener('dragstart', () => { card.classList.add('dragging'); window.__draggedCardId = card.id; });
+  card.addEventListener('dragend', () => card.classList.remove('dragging'));
+});
+function updateKanbanCounts() {
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const count = col.querySelectorAll('.kanban-card').length;
+    col.querySelector('.kanban-count').textContent = count;
+  });
+}
+document.querySelectorAll('.kanban-dropzone').forEach(zone => {
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const card = document.getElementById(window.__draggedCardId);
+    if (card) { zone.appendChild(card); describeKanbanCard(card); }
+    updateKanbanCounts();
+  });
+});
+
+// ===================== APPROVALS DEMO =====================
+document.querySelectorAll('.btn-approve').forEach(btn => btn.addEventListener('click', () => {
+  const item = btn.closest('.approval-item');
+  const pill = item.querySelector('.status-pill');
+  pill.textContent = 'Aprovado'; pill.className = 'status-pill ok';
+  item.querySelectorAll('.approval-actions button').forEach(b => b.disabled = true);
+}));
+document.querySelectorAll('.btn-reject').forEach(btn => btn.addEventListener('click', () => {
+  const item = btn.closest('.approval-item');
+  const pill = item.querySelector('.status-pill');
+  pill.textContent = 'Recusado'; pill.className = 'status-pill danger';
+  item.querySelectorAll('.approval-actions button').forEach(b => b.disabled = true);
+}));
+
+// ===================== EMPLOYEE DRAWER =====================
+const drawerOverlay = document.getElementById('drawerOverlay');
+document.querySelectorAll('[data-open-drawer]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('drawerName').textContent = btn.dataset.name;
+    document.getElementById('drawerRole').textContent = btn.dataset.role;
+    document.getElementById('drawerDept').textContent = btn.dataset.dept;
+    document.getElementById('drawerAdmission').textContent = btn.dataset.admission;
+    document.getElementById('drawerEmail').textContent = btn.dataset.email;
+    document.getElementById('drawerPhone').textContent = btn.dataset.phone;
+    document.getElementById('drawerAvatar').textContent = btn.dataset.name.split(' ').map(n => n[0]).slice(0,2).join('');
+    drawerOverlay.classList.add('open');
+  });
+});
+document.getElementById('drawerClose').addEventListener('click', () => drawerOverlay.classList.remove('open'));
+drawerOverlay.addEventListener('click', (e) => { if (e.target === drawerOverlay) drawerOverlay.classList.remove('open'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { drawerOverlay.classList.remove('open'); document.getElementById('captureOverlay')?.classList.remove('open'); } });
+// ===================== SMART TABLES: refresh helper =====================
+function refreshTableCards(tableId) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const wrap = table.closest('.table-wrap');
+  const existingCards = wrap.nextElementSibling;
+  if (existingCards && existingCards.classList.contains('table-cards')) existingCards.remove();
+  delete wrap.dataset.cardsBuilt;
+  buildResponsiveTableCards();
+}
+
+  // ===================== PREMIUM CHART: draw-in + hover tooltip (reutilizável) =====================
+  function initPremiumChart(ids) {
+    const svg = document.getElementById(ids.svg);
+    if (!svg) return;
+    const path = document.getElementById(ids.crisp);
+    const glowPath = document.getElementById(ids.glow);
+    const guide = document.getElementById(ids.guide);
+    const hoverDot = document.getElementById(ids.dot);
+    const tooltip = document.getElementById(ids.tooltip);
+    const len = path.getTotalLength();
+    [path, glowPath].forEach((p) => {
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = reduceMotion ? 0 : len;
+      p.style.transition = 'stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)';
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      path.style.strokeDashoffset = 0;
+      glowPath.style.strokeDashoffset = 0;
+    }));
+
+    const months = [
+      { x: 0, label: 'Jul', value: 1080 }, { x: 100, label: 'Ago', value: 1102 },
+      { x: 200, label: 'Set', value: 1118 }, { x: 300, label: 'Out', value: 1150 },
+      { x: 400, label: 'Nov', value: 1178 }, { x: 500, label: 'Dez', value: 1215 },
+      { x: 600, label: 'Jan', value: 1248 },
+    ];
+    function yAtX(targetX) {
+      let lo = 0, hi = len, best = { x: 0, y: 0 };
+      for (let i = 0; i <= 30; i++) {
+        const mid = (lo + hi) / 2;
+        const pt = path.getPointAtLength(mid);
+        best = pt;
+        if (Math.abs(pt.x - targetX) < 0.4) break;
+        if (pt.x < targetX) lo = mid; else hi = mid;
+      }
+      return best.y;
+    }
+    const markers = months.map((m) => ({ ...m, y: yAtX(m.x) }));
+    svg.addEventListener('mousemove', (e) => {
+      const rect = svg.getBoundingClientRect();
+      const mx = ((e.clientX - rect.left) / rect.width) * 600;
+      let nearest = markers[0];
+      markers.forEach((m) => { if (Math.abs(m.x - mx) < Math.abs(nearest.x - mx)) nearest = m; });
+      hoverDot.setAttribute('cx', nearest.x);
+      hoverDot.setAttribute('cy', nearest.y);
+      hoverDot.style.opacity = 1;
+      guide.setAttribute('x1', nearest.x);
+      guide.setAttribute('x2', nearest.x);
+      guide.style.opacity = 1;
+      tooltip.style.left = (nearest.x / 600 * 100) + '%';
+      tooltip.style.top = (nearest.y / 180 * 100) + '%';
+      tooltip.textContent = `${nearest.label} — ${nearest.value.toLocaleString('pt-BR')} colaboradores`;
+      tooltip.classList.add('show');
+    });
+    svg.addEventListener('mouseleave', () => {
+      hoverDot.style.opacity = 0;
+      guide.style.opacity = 0;
+      tooltip.classList.remove('show');
+    });
+  }
+
+  initPremiumChart({ svg: 'dashChartSvg', crisp: 'dashCrispLine', glow: 'dashGlowLine', guide: 'dashChartGuide', dot: 'dashHoverDot', tooltip: 'dashChartTooltip' });
+  initPremiumChart({ svg: 'analyticsChartSvg', crisp: 'analyticsCrispLine', glow: 'analyticsGlowLine', guide: 'analyticsChartGuide', dot: 'analyticsHoverDot', tooltip: 'analyticsChartTooltip' });
+
+// ===================== DOCUMENT CAPTURE (camera/gallery + simulated OCR) =====================
+const captureOverlay = document.getElementById('captureOverlay');
+const capturePreviewImg = document.getElementById('capturePreviewImg');
+const captureFrame = document.getElementById('captureFrame');
+const captureResult = document.getElementById('captureResult');
+const captureSaveBtn = document.getElementById('captureSaveBtn');
+const cameraInput = document.getElementById('cameraInput');
+const galleryInput = document.getElementById('galleryInput');
+const btnOpenCamera = document.getElementById('btnOpenCamera');
+const btnOpenGallery = document.getElementById('btnOpenGallery');
+
+if (btnOpenCamera && btnOpenGallery) {
+  btnOpenCamera.addEventListener('click', () => cameraInput.click());
+  btnOpenGallery.addEventListener('click', () => galleryInput.click());
+
+  const sampleDocs = [
+    { type: 'Documento identificado: RG / CPF', name: 'Bianca Reis', doc: '000.000.000-00' },
+    { type: 'Documento identificado: Comprovante de residência', name: 'Felipe Tavares', doc: 'Conta de energia · 06/2026' },
+    { type: 'Documento identificado: Contrato assinado', name: 'Juliana Mota', doc: 'Assinatura digital válida' },
+  ];
+
+  function resetCaptureModal() {
+    capturePreviewImg.style.display = 'none';
+    captureFrame.classList.remove('show');
+    document.querySelectorAll('#captureSteps .capture-step').forEach(s => s.classList.remove('active', 'done'));
+    captureResult.classList.remove('show');
+    captureSaveBtn.style.display = 'none';
+  }
+
+  function runCaptureSteps() {
+    const steps = document.querySelectorAll('#captureSteps .capture-step');
+    let i = 0;
+    function nextStep() {
+      if (i > 0) steps[i - 1].classList.remove('active'), steps[i - 1].classList.add('done');
+      if (i >= steps.length) { captureFrame.classList.remove('show'); showCaptureResult(); return; }
+      steps[i].classList.add('active');
+      i++;
+      setTimeout(nextStep, reduceMotion ? 80 : 750);
+    }
+    nextStep();
+  }
+
+  function showCaptureResult() {
+    const sample = sampleDocs[Math.floor(Math.random() * sampleDocs.length)];
+    document.getElementById('captureDocType').textContent = sample.type;
+    document.getElementById('captureFieldName').textContent = sample.name;
+    document.getElementById('captureFieldDoc').textContent = sample.doc;
+    captureResult.classList.add('show');
+    captureSaveBtn.style.display = 'block';
+    captureSaveBtn.dataset.sample = JSON.stringify(sample);
+  }
+
+  function handleCaptureFile(file) {
+    if (!file) return;
+    resetCaptureModal();
+    captureOverlay.classList.add('open');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      capturePreviewImg.src = e.target.result;
+      capturePreviewImg.style.display = 'block';
+      captureFrame.classList.add('show');
+      runCaptureSteps();
+    };
+    reader.readAsDataURL(file);
+  }
+  cameraInput.addEventListener('change', (e) => handleCaptureFile(e.target.files[0]));
+  galleryInput.addEventListener('change', (e) => handleCaptureFile(e.target.files[0]));
+
+  captureSaveBtn.addEventListener('click', () => {
+    const sample = JSON.parse(captureSaveBtn.dataset.sample || '{}');
+    const docName = (sample.type || '').replace('Documento identificado: ', '') || 'Documento';
+    const tbody = document.querySelector('#docsTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${docName}</td><td>${sample.name || '—'}</td><td>19/06/2026</td><td><span class="status-pill ok">Aprovado</span></td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+    refreshTableCards('docsTable');
+    captureOverlay.classList.remove('open');
+    cameraInput.value = ''; galleryInput.value = '';
+  });
+
+  document.getElementById('captureClose').addEventListener('click', () => captureOverlay.classList.remove('open'));
+  captureOverlay.addEventListener('click', (e) => { if (e.target === captureOverlay) captureOverlay.classList.remove('open'); });
+}
+
+// ===================== CHAT ASSISTANT DEMO =====================
+const chatLog = document.getElementById('chatLog');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const cannedResponses = [
+  { keys: ['férias','ferias'], reply: 'O colaborador tem 18 dias de férias disponíveis, com período aquisitivo até 14/09.' },
+  { keys: ['holerite','contracheque','salário','salario'], reply: 'O holerite de junho já está disponível no Portal do Colaborador, em Documentos.' },
+  { keys: ['ponto','horário','horario'], reply: 'O horário cadastrado é de segunda a sexta, das 9h às 18h. Há 1 ajuste de ponto pendente de aprovação.' },
+  { keys: ['benefício','beneficio','plano de saúde','vr','va'], reply: 'Os benefícios ativos são: plano de saúde, VR de R$ 35/dia e VA de R$ 600/mês.' },
+  { keys: ['quantos colaborador','quantos funcionário','total de colaborador'], reply: 'A empresa tem 1.248 colaboradores ativos no momento, distribuídos em 3 unidades (consulta ao módulo Colaboradores).' },
+  { keys: ['colaborador afastado','afastado','quem está de férias','quem está afastado'], reply: 'Hoje há 1 colaborador afastado (Vitor Hugo) e 1 colaborador em férias (Pedro Lima) — veja a lista completa em Colaboradores → Diretório.' },
+  { keys: ['documento pendente','documento pendentes','documentos pendentes'], reply: 'Há 1 documento pendente (Exame admissional — Felipe Tavares) e 1 em análise (Contrato assinado — Felipe Tavares). Veja em Onboarding → Documentos.' },
+  { keys: ['status do documento','confiança do ocr','ocr'], reply: 'O último documento processado por IA foi o RG e CPF de Bianca Reis, com 96% de confiança na leitura — veja o log completo em Onboarding → Documentos.' },
+  { keys: ['onboarding','integração','novo colaborador'], reply: 'Há 32 onboardings ativos. Bianca Reis está no dia 8 de 30 (62% concluído) e Felipe Tavares no dia 1 de 30. Veja todos em Onboarding → Status de integração.' },
+  { keys: ['vaga aberta','vagas abertas','recrutamento'], reply: 'Há 18 vagas abertas no momento, com 96 candidatos no pipeline. Veja em Recrutamento → Vagas.' },
+];
+function addBubble(text, who) {
+  const div = document.createElement('div');
+  div.className = 'chat-bubble ' + who;
+  div.textContent = text;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+function botReply(userText) {
+  const lower = userText.toLowerCase();
+  const match = cannedResponses.find(r => r.keys.some(k => lower.includes(k)));
+  setTimeout(() => {
+    addBubble(match ? match.reply : 'Não encontrei uma resposta automática para isso — encaminhando para o time de RH.', 'bot');
+  }, 450);
+}
+function sendChatMessage() {
+  const val = chatInput.value.trim();
+  if (!val) return;
+  addBubble(val, 'user');
+  chatInput.value = '';
+  botReply(val);
+}
+chatSend.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+document.querySelectorAll('.chat-list-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.chat-list-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+
+// ===================== MEU PERFIL =====================
+const goToProfileLink = document.getElementById('goToProfile');
+const backFromProfile = document.getElementById('backFromProfile');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+goToProfileLink.addEventListener('click', () => {
+  views.forEach(v => v.classList.toggle('active', v.id === 'view-perfil'));
+  dockItems.forEach(d => { d.classList.remove('active'); d.removeAttribute('aria-current'); });
+  pageTitle.textContent = 'Meu perfil';
+  closeDropdowns(null);
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+});
+
+backFromProfile.addEventListener('click', () => {
+  document.querySelector('.dock-item[data-view="view-inicio"]').click();
+});
+
+if (saveProfileBtn) {
+  saveProfileBtn.addEventListener('click', () => {
+    saveProfileBtn.textContent = 'Salvo ✓';
+    setTimeout(() => { saveProfileBtn.textContent = 'Salvar alterações'; }, 1800);
+  });
+}
+
+// ===================== SMART TABLES (mobile cards) =====================
+function buildResponsiveTableCards() {
+  document.querySelectorAll('.table-wrap').forEach(wrap => {
+    const table = wrap.querySelector('.data-table');
+    if (!table || wrap.dataset.cardsBuilt) return;
+    wrap.dataset.cardsBuilt = '1';
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className = 'table-cards';
+    Array.from(table.querySelectorAll('tbody tr')).forEach(tr => {
+      const cells = Array.from(tr.children);
+      if (!cells.length) return;
+      const card = document.createElement('div');
+      card.className = 'table-card';
+      if (tr.dataset.cat) card.dataset.cat = tr.dataset.cat;
+      card.dataset.searchText = tr.textContent.toLowerCase();
+      tr.__card = card;
+
+      const head = document.createElement('div');
+      head.className = 'table-card-head';
+      const primary = document.createElement('div');
+      primary.className = 'table-card-primary';
+      primary.appendChild(cells[0].cloneNode(true));
+      head.appendChild(primary);
+
+      const hasDetails = cells.length > 1;
+      let details;
+      if (hasDetails) {
+        const toggle = document.createElement('button');
+        toggle.className = 'table-card-toggle';
+        toggle.type = 'button';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Ver mais detalhes');
+        toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        head.appendChild(toggle);
+
+        details = document.createElement('div');
+        details.className = 'table-card-details';
+        for (let i = 1; i < cells.length; i++) {
+          const label = (headers[i] || '').trim();
+          const valueHtml = cells[i].innerHTML.trim();
+          if (!valueHtml) continue;
+          const row = document.createElement('div');
+          row.className = 'table-card-row';
+          const lab = document.createElement('span');
+          lab.className = 'table-card-label';
+          lab.textContent = label || ' ';
+          const val = document.createElement('span');
+          val.className = 'table-card-value';
+          val.innerHTML = valueHtml;
+          row.append(lab, val);
+          details.appendChild(row);
+        }
+        toggle.addEventListener('click', () => {
+          const isOpen = card.classList.toggle('expanded');
+          toggle.setAttribute('aria-expanded', String(isOpen));
+        });
+      }
+
+      card.appendChild(head);
+      if (details) card.appendChild(details);
+      cardsWrap.appendChild(card);
+    });
+    wrap.insertAdjacentElement('afterend', cardsWrap);
+  });
+}
+buildResponsiveTableCards();
+
+// ===================== KANBAN KEYBOARD NAVIGATION =====================
+function kanbanColumnName(col) {
+  return col.querySelector('.kanban-col-head').textContent.replace(/\d+$/, '').trim();
+}
+function describeKanbanCard(card) {
+  const name = card.querySelector('strong')?.textContent || '';
+  const role = card.querySelector('.role')?.textContent || '';
+  const col = card.closest('.kanban-col');
+  const colName = col ? kanbanColumnName(col) : '';
+  card.setAttribute('aria-label', `${name}, ${role}, coluna ${colName}. Use as setas para mover entre colunas.`);
+}
+document.querySelectorAll('.kanban-card').forEach(card => {
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('role', 'listitem');
+  describeKanbanCard(card);
+  card.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const col = card.closest('.kanban-col');
+    const allCols = Array.from(document.querySelectorAll('.kanban-col'));
+    const idx = allCols.indexOf(col);
+    const targetCol = e.key === 'ArrowRight' ? allCols[idx + 1] : allCols[idx - 1];
+    if (!targetCol) return;
+    targetCol.querySelector('.kanban-dropzone').appendChild(card);
+    updateKanbanCounts();
+    describeKanbanCard(card);
+    card.focus();
+    card.classList.add('card-moved');
+    setTimeout(() => card.classList.remove('card-moved'), 650);
+  });
+});
+
+// ===================== PWA: SERVICE WORKER REGISTRATION =====================
+if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* no real host yet — safe to ignore */ });
+  });
+}
+
+// ===================== GLOBAL COMMAND PALETTE (Ctrl+K) =====================
+(function () {
+  const overlay = document.getElementById('cmdkOverlay');
+  const input = document.getElementById('cmdkInput');
+  const resultsEl = document.getElementById('cmdkResults');
+  const trigger = document.getElementById('topbarSearchTrigger');
+  if (!overlay) return;
+
+  const icoHome = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>';
+  const icoPerson = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/></svg>';
+  const icoFile = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+  const icoBolt = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>';
+
+  const items = [
+    { group: 'Módulos', label: 'Início', sub: 'Dashboard', icon: icoHome, view: 'view-inicio' },
+    { group: 'Módulos', label: 'Colaboradores', sub: 'Diretório e escalas', icon: icoHome, view: 'view-colaboradores' },
+    { group: 'Módulos', label: 'Recrutamento', sub: 'Vagas e pipeline', icon: icoHome, view: 'view-recrutamento' },
+    { group: 'Módulos', label: 'Onboarding', sub: 'Checklist e documentos', icon: icoHome, view: 'view-onboarding' },
+    { group: 'Módulos', label: 'Assistente RH', sub: 'Atendimento e FAQ', icon: icoHome, view: 'view-assistente' },
+    { group: 'Módulos', label: 'Analytics', sub: 'Indicadores de pessoas', icon: icoHome, view: 'view-analytics' },
+    { group: 'Módulos', label: 'Configurações', sub: 'Usuários e permissões', icon: icoHome, view: 'view-config' },
+    { group: 'Colaboradores', label: 'Marina Souza', sub: 'Analista de Marketing', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Colaboradores', label: 'Diego Ramos', sub: 'Dev Backend Jr.', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Colaboradores', label: 'Pedro Lima', sub: 'Coordenador de Logística', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Colaboradores', label: 'Ana Costa', sub: 'Analista Financeiro', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Colaboradores', label: 'Bianca Reis', sub: 'Analista de RH', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Colaboradores', label: 'Vitor Hugo', sub: 'Designer de Produto', icon: icoPerson, view: 'view-colaboradores' },
+    { group: 'Vagas', label: 'Analista de Marketing', sub: '23 candidaturas', icon: icoFile, view: 'view-recrutamento', sub2: 'recrut-vagas' },
+    { group: 'Vagas', label: 'Dev Backend Pleno', sub: '41 candidaturas', icon: icoFile, view: 'view-recrutamento', sub2: 'recrut-vagas' },
+    { group: 'Documentos', label: 'RG e CPF — Bianca Reis', sub: 'Aprovado', icon: icoFile, view: 'view-onboarding', sub2: 'onb-documentos' },
+    { group: 'Documentos', label: 'Contrato assinado — Felipe Tavares', sub: 'Em análise', icon: icoFile, view: 'view-onboarding', sub2: 'onb-documentos' },
+    { group: 'Ações', label: 'Meu perfil', sub: 'Conta e segurança', icon: icoBolt, action: 'profile' },
+    { group: 'Ações', label: '+ Nova vaga', sub: 'Recrutamento', icon: icoBolt, view: 'view-recrutamento' },
+    { group: 'Ações', label: '+ Novo colaborador', sub: 'Colaboradores', icon: icoBolt, view: 'view-colaboradores' },
+  ];
+
+  function goToSub(viewId, subId) {
+    document.querySelector(`.dock-item[data-view="${viewId}"]`)?.click();
+    if (subId) {
+      setTimeout(() => {
+        document.querySelector(`#${viewId} [data-sub="${subId}"]`)?.click();
+      }, 50);
+    }
+  }
+
+  let activeIndex = 0;
+  let filtered = [];
+
+  function render(query) {
+    const q = query.trim().toLowerCase();
+    filtered = !q ? items : items.filter((it) => (it.label + ' ' + it.sub + ' ' + it.group).toLowerCase().includes(q));
+    activeIndex = 0;
+    if (!filtered.length) {
+      resultsEl.innerHTML = '<div class="cmdk-empty">Nada encontrado para "' + query + '"</div>';
+      return;
+    }
+    let html = '';
+    let lastGroup = null;
+    filtered.forEach((it, i) => {
+      if (it.group !== lastGroup) { html += `<div class="cmdk-group-label">${it.group}</div>`; lastGroup = it.group; }
+      html += `<div class="cmdk-item${i === 0 ? ' active' : ''}" data-idx="${i}">${it.icon}<span>${it.label}</span><span class="cmdk-sub">${it.sub}</span></div>`;
+    });
+    resultsEl.innerHTML = html;
+  }
+
+  function setActive(idx) {
+    activeIndex = Math.max(0, Math.min(filtered.length - 1, idx));
+    resultsEl.querySelectorAll('.cmdk-item').forEach((el) => el.classList.toggle('active', Number(el.dataset.idx) === activeIndex));
+    resultsEl.querySelector('.cmdk-item.active')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function choose(idx) {
+    const it = filtered[idx];
+    if (!it) return;
+    closeCmdk();
+    if (it.action === 'profile') { document.getElementById('goToProfile')?.click(); return; }
+    goToSub(it.view, it.sub2);
+  }
+
+  function openCmdk() {
+    overlay.classList.add('open');
+    input.value = '';
+    render('');
+    setTimeout(() => input.focus(), 30);
+  }
+  function closeCmdk() { overlay.classList.remove('open'); }
+
+  trigger.addEventListener('click', openCmdk);
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmdk(); }
+    else if (e.key === 'Escape' && overlay.classList.contains('open')) { closeCmdk(); }
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCmdk(); });
+  input.addEventListener('input', () => render(input.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(activeIndex + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(activeIndex - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); choose(activeIndex); }
+  });
+  resultsEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.cmdk-item');
+    if (item) choose(Number(item.dataset.idx));
+  });
+})();
+
+// ===================== BUTTON RIPPLE (microinteração) =====================
+if (!reduceMotion) {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'btn-ripple';
+    const size = Math.max(rect.width, rect.height) * 1.6;
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 650);
+  });
+}
+</script>
+</body>
+</html>

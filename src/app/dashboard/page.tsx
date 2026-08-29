@@ -1,17 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import SignOutButton from '@/components/dashboard/sign-out-button';
+import DashboardFrame from '@/components/dashboard/DashboardFrame';
 
 /**
- * Este é o primeiro Dashboard REAL: os números abaixo vêm do banco,
- * filtrados automaticamente pelo tenant do usuário logado via RLS
- * (veja supabase/migrations/0002_row_level_security.sql). Não é mock.
- *
- * O visual completo (KPIs com sparkline, gráfico de crescimento com
- * glow, dock de navegação, Ctrl+K etc.) do fortixx-plataforma.html
- * ainda precisa ser portado para componentes React — este arquivo é
- * a base funcional sobre a qual esse visual entra, não o substituto
- * dele. Ver README.md → "O que ainda falta" para o estado exato.
+ * Dashboard real: autentica, busca os KPIs no Supabase (isolados por tenant via
+ * RLS — não é mock) e entrega pro DashboardFrame, que renderiza a Plataforma de
+ * RH completa (protótipo validado pela Renata) num iframe já com esses números.
  */
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -49,42 +43,14 @@ export default async function DashboardPage() {
   const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants;
 
   return (
-    <div style={{ padding: 40, maxWidth: 1100, margin: '0 auto' }}>
-      <div className="view-head">
-        <div>
-          <h1 className="view-title">Olá, {profile.full_name.split(' ')[0]} 👋</h1>
-          <p className="view-sub">
-            {tenant?.name} · plano {tenant?.plan} ·{' '}
-            {tenant?.subscription_status === 'trialing' ? 'período de teste' : tenant?.subscription_status}
-          </p>
-        </div>
-        <SignOutButton />
-      </div>
-
-      <div className="kpi-grid" style={{ marginTop: 28 }}>
-        <div className="kpi-card glass accent-blue">
-          <div className="kpi-top"><span className="kpi-label">Total de colaboradores</span></div>
-          <div className="kpi-value">{totalColaboradores ?? 0}</div>
-        </div>
-        <div className="kpi-card glass accent-gold">
-          <div className="kpi-top"><span className="kpi-label">Vagas abertas</span></div>
-          <div className="kpi-value">{vagasAbertas ?? 0}</div>
-        </div>
-        <div className="kpi-card glass accent-blue">
-          <div className="kpi-top"><span className="kpi-label">Onboardings ativos</span></div>
-          <div className="kpi-value">{onboardingsAtivos ?? 0}</div>
-        </div>
-        <div className="kpi-card glass accent-warn">
-          <div className="kpi-top"><span className="kpi-label">Documentos pendentes</span></div>
-          <div className="kpi-value">{solicitacoesPendentes ?? 0}</div>
-        </div>
-      </div>
-
-      <p className="muted" style={{ marginTop: 32, fontSize: '.85rem' }}>
-        Estes números são consultados em tempo real do Supabase, isolados por empresa via Row Level Security —
-        não é dado de demonstração. O visual completo do dashboard (gráficos, Dock, Ctrl+K) ainda precisa ser
-        portado para React; ver README.md.
-      </p>
-    </div>
+    <DashboardFrame
+      name={profile.full_name}
+      tenantName={tenant?.name}
+      plan={tenant?.plan}
+      kpiColaboradores={totalColaboradores ?? 0}
+      kpiVagas={vagasAbertas ?? 0}
+      kpiOnboardings={onboardingsAtivos ?? 0}
+      kpiSolicitacoes={solicitacoesPendentes ?? 0}
+    />
   );
 }

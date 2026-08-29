@@ -135,41 +135,55 @@ export default function Setup2FAPage() {
 
   if (loading) {
     return (
-      <main className="login-main">
-        <header className="login-topbar">
-          <Logo />
-        </header>
-        <div className="login-card-wrap">
-          <div className="login-card glass">
-            <p className="login-sub">Gerando QR Code...</p>
-          </div>
+      <>
+        <div className="ambient" aria-hidden="true">
+          <div className="orb orb-1" />
         </div>
-      </main>
+        <main className="login-main">
+          <header className="login-topbar">
+            <Logo />
+          </header>
+          <div className="login-card-wrap">
+            <div className="login-card glass">
+              <p className="login-sub">Gerando QR Code...</p>
+            </div>
+          </div>
+        </main>
+      </>
     );
   }
 
   if (error && !qrSvg) {
     return (
-      <main className="login-main">
-        <header className="login-topbar">
-          <Logo />
-        </header>
-        <div className="login-card-wrap">
-          <div className="login-card glass">
-            <span className="login-eyebrow">Erro</span>
-            <h1 className="login-title">Setup 2FA</h1>
-            <p className="login-sub" style={{ color: 'var(--red, #f87171)' }}>{error}</p>
-            <button onClick={handleLogout} className="btn btn-primary" style={{ marginTop: 16 }}>
-              Voltar pro login
-            </button>
-          </div>
+      <>
+        <div className="ambient" aria-hidden="true">
+          <div className="orb orb-1" />
         </div>
-      </main>
+        <main className="login-main">
+          <header className="login-topbar">
+            <Logo />
+          </header>
+          <div className="login-card-wrap">
+            <div className="login-card glass">
+              <span className="login-eyebrow">Erro</span>
+              <h1 className="login-title">Setup 2FA</h1>
+              <p className="login-sub" style={{ color: 'var(--red, #f87171)' }}>{error}</p>
+              <button onClick={handleLogout} className="btn btn-primary" style={{ marginTop: 16 }}>
+                Voltar pro login
+              </button>
+            </div>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="login-main">
+    <>
+      <div className="ambient" aria-hidden="true">
+        <div className="orb orb-1" />
+      </div>
+      <main className="login-main">
       <header className="login-topbar">
         <Logo />
       </header>
@@ -244,6 +258,7 @@ export default function Setup2FAPage() {
           </button>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
