@@ -11,6 +11,11 @@
 // 30/07 (commit fb35519) mas sumiu do next.config.js num reverte/
 // promoção posterior — produção ficou rodando sem CSP/X-Frame-Options/
 // etc. por semanas, só com o HSTS default da própria Vercel.
+//
+// Ajustado em 2026-08-30 (integração do dashboard): frame-ancestors
+// 'none' → 'self' e X-Frame-Options DENY → SAMEORIGIN, porque /dashboard
+// agora carrega /dashboard/platform num iframe same-origin — DENY
+// bloquearia o próprio dashboard novo.
 // ============================================================================
 const securityHeaders = [
   // CSP — permite self + Supabase + Google Fonts + Stripe (sandbox iframe)
@@ -24,7 +29,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://*.supabase.co",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
       "frame-src 'self' https://js.stripe.com",
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
@@ -35,8 +40,8 @@ const securityHeaders = [
     key: 'Strict-Transport-Security',
     value: 'max-age=31536000; includeSubDomains',
   },
-  // Clickjacking: ninguém pode iframear o Fortixx
-  { key: 'X-Frame-Options', value: 'DENY' },
+  // Clickjacking: só o próprio Fortixx pode iframear o Fortixx (dashboard novo depende disso)
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   // Anti-MIME-sniffing
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   // Referrer mínimo (não vaza URL completa pra terceiros)
