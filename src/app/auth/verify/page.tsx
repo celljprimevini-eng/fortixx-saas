@@ -94,7 +94,15 @@ export default function VerifyPage() {
 
     setTimeout(async () => {
       const code = digits.join('');
+      // A verificação depende de 2 chamadas de rede pro Supabase (challenge +
+      // verify) e pode demorar alguns segundos dependendo da rede — sem esse
+      // aviso, depois de "Autorizando acesso..." a tela fica com texto parado
+      // por vários segundos e passa a impressão de estar travada.
+      const slowNotice = setTimeout(() => {
+        setStatusText('Ainda verificando... a conexão está mais lenta que o normal.');
+      }, 4000);
       const result = await verifyCode(code);
+      clearTimeout(slowNotice);
 
       if (!result.ok) {
         setVerifying(false);
