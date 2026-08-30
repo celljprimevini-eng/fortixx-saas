@@ -24,7 +24,6 @@ export default function VerifyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
   const [merging, setMerging] = useState(false);
-  const [ledRun, setLedRun] = useState(false);
   const [lineRun, setLineRun] = useState(false);
   const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
@@ -80,7 +79,6 @@ export default function VerifyPage() {
     setErrorMsg('');
 
     setMerging(true);
-    setLedRun(true);
     setLineRun(true);
     setTimeout(() => setScanRun(true), 50);
 
@@ -109,7 +107,6 @@ export default function VerifyPage() {
         setStatusShow(false);
         setShake(true);
         setMerging(false);
-        setLedRun(false);
         setErrorState(true);
         setErrorMsg(result.message);
         setTimeout(() => setShake(false), 520);
@@ -216,7 +213,6 @@ export default function VerifyPage() {
                 </div>
                 <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
                 <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
-                <div className={`code-merge-frame ${ledRun ? 'run' : ''}`} aria-hidden="true" />
               </div>
 
               <p className="error-text">{errorMsg}</p>
