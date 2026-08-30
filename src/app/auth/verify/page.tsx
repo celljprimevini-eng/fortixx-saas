@@ -236,6 +236,7 @@ export default function VerifyPage() {
               <div className="success-wrap">
                 <div className="success-icon gold pulse">
                   <div className="success-icon-ring" />
+                  <div className="success-icon-ring-outer" />
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
                 </div>
                 <h1 className="login-title">Identidade verificada com sucesso.</h1>
