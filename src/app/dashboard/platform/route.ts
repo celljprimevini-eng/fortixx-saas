@@ -154,8 +154,8 @@ ${platformBody}
         }).join('');
 
     html = html.replace(
-      /(<div class="subview active" id="recrut-vagas">\s*<div class="dash-row thirds">)[\s\S]*?(<\/div>\s*<\/div>)/,
-      `$1${cards}$2`
+      /<div class="subview active" id="recrut-vagas">\s*<div class="dash-row thirds">[\s\S]*?(?=<div class="subview" id="recrut-pipeline">)/,
+      `<div class="subview active" id="recrut-vagas">\n<div class="dash-row thirds">${cards}</div>\n</div>\n`
     );
   }
 
@@ -174,8 +174,8 @@ ${platformBody}
     }).join('');
 
     html = html.replace(
-      /(<div class="subview" id="recrut-pipeline">\s*<div class="kanban-board">)[\s\S]*?(<\/div>\s*<\/div>)/,
-      `$1${columns}$2`
+      /<div class="subview" id="recrut-pipeline">\s*<div class="kanban-board">[\s\S]*?(?=<div class="subview" id="recrut-curriculos">)/,
+      `<div class="subview" id="recrut-pipeline">\n<div class="kanban-board">${columns}</div>\n</div>\n`
     );
   }
 
@@ -222,8 +222,8 @@ ${platformBody}
     }
 
     html = html.replace(
-      /(<div class="subview active" id="onb-checklist">)[\s\S]*?(<div class="subview" id="onb-documentos">)/,
-      `$1${onbCards}$2`
+      /<div class="subview active" id="onb-checklist">[\s\S]*?(?=<div class="subview" id="onb-documentos">)/,
+      `<div class="subview active" id="onb-checklist">${onbCards}</div>\n`
     );
   }
 
