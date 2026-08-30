@@ -192,7 +192,7 @@ ${platformBody}
         .in('onboarding_id', onboardingIds)
         .order('order_index', { ascending: true });
 
-      onbCards = onboardings.map((o, idx) => {
+      const computed = onboardings.map((o) => {
         const person = Array.isArray(o.profiles) ? o.profiles[0] : o.profiles;
         const myTasks = (tasks ?? []).filter((t) => t.onboarding_id === o.id);
         const done = myTasks.filter((t) => t.done).length;
@@ -200,16 +200,78 @@ ${platformBody}
         const dayNum = o.start_date ? Math.max(1, Math.floor((Date.now() - new Date(o.start_date).getTime()) / 86400000) + 1) : 1;
         const name = person?.full_name ? escapeHtml(person.full_name) : 'Colaborador';
         const role = person?.job_title ? escapeHtml(person.job_title) : '—';
+        return { name, role, pct, dayNum, myTasks };
+      });
+
+      onbCards = computed.map(({ name, role, pct, dayNum, myTasks }, idx) => {
         const taskRows = myTasks.length === 0
           ? '<div class="onb-task"><span class="onb-check"></span><span class="label">Nenhuma tarefa cadastrada</span></div>'
           : myTasks.map((t) => `<div class="onb-task ${t.done ? 'done' : ''}"><span class="onb-check">${t.done ? '✓' : ''}</span><span class="label">${escapeHtml(t.title)}</span></div>`).join('');
         return `<div class="onb-emp-card glass${idx === 0 ? ' expanded' : ''}"><div class="onb-emp-top"><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">${escapeHtml(initials(name))}</span><div><div class="name">${name}</div><div class="sub">${role} · Dia ${dayNum} de 30</div></div></div><button class="expand-toggle" data-toggle-onb><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="progress-row"><span>Progresso</span><span>${pct}%</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="onb-checklist">${taskRows}</div></div>`;
       }).join('');
+
+      // ---- Onboarding > Status de integração ----
+      const statusRows = computed.map(({ name, role, pct, dayNum }) => {
+        const pill = pct >= 70 ? { cls: 'ok', label: 'No prazo' } : pct >= 30 ? { cls: 'pending', label: 'Em dia' } : { cls: 'pending', label: 'Início' };
+        return `<tr><td>${name}</td><td>${dayNum}/30</td><td>${pct}%</td><td>${role}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td></tr>`;
+      }).join('');
+      html = html.replace(
+        /(<div class="subview" id="onb-status">\s*<div class="table-wrap glass">\s*<table class="data-table">\s*<thead><tr><th>Colaborador<\/th><th>Dia<\/th><th>Progresso<\/th><th>Responsável<\/th><th>Status<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
+        `$1${statusRows || '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">Nenhum onboarding em andamento.</td></tr>'}$2`
+      );
     }
 
     html = html.replace(
       /(<div class="subview active" id="onb-checklist">)[\s\S]*?(<div class="subview" id="onb-documentos">)/,
       `$1${onbCards}$2`
+    );
+  }
+
+  // ---- Recrutamento > Banco de currículos ----
+  if (candidates) {
+    const rows = candidates.length === 0
+      ? `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhum candidato ainda.</td></tr>`
+      : candidates.slice(0, 20).map((c) => {
+          const jobTitle = c.job_opening_id ? (jobMap.get(c.job_opening_id) ?? '—') : '—';
+          return `<tr><td>${escapeHtml(c.full_name)}</td><td>${escapeHtml(jobTitle)}</td><td><div class="tags"></div></td><td>—</td></tr>`;
+        }).join('');
+    html = html.replace(
+      /(<thead><tr><th>Candidato<\/th><th>Cargo de interesse<\/th><th>Habilidades<\/th><th>Data<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
+      `$1${rows}$2`
+    );
+
+    // ---- Recrutamento > Dashboard (funil real) ----
+    const total = candidates.length;
+    const stageCounts = {
+      Candidaturas: total,
+      Triagem: candidates.filter((c) => ['recebido', 'triagem', 'analise', 'entrevista', 'aprovado'].includes(c.stage)).length,
+      Entrevista: candidates.filter((c) => ['entrevista', 'aprovado'].includes(c.stage)).length,
+      Proposta: candidates.filter((c) => c.stage === 'aprovado').length,
+      Contratado: candidates.filter((c) => c.stage === 'aprovado').length,
+    };
+    const maxCount = Math.max(1, total);
+    const funnelRows = Object.entries(stageCounts).map(([label, count]) => {
+      const pct = Math.round((count / maxCount) * 100);
+      return `<div class="funnel-row"><span class="funnel-label">${label}</span><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${pct}%">${count}</div></div></div>`;
+    }).join('');
+    html = html.replace(
+      /(<div class="funnel">)[\s\S]*?(<\/div>\s*<\/div>\s*<div class="panel glass">\s*<div class="panel-head"><h3>Tempo médio de contratação)/,
+      `$1${funnelRows}$2`
+    );
+  }
+
+  // ---- Configurações > Usuários ----
+  if (colaboradores) {
+    const rows = colaboradores.length === 0
+      ? `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhum usuário ainda.</td></tr>`
+      : colaboradores.map((c) => {
+          const pill = STATUS_PILL[c.status] ?? STATUS_PILL.active;
+          const roleTag = c.job_title ? escapeHtml(c.job_title) : 'Colaborador';
+          return `<tr><td><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">${escapeHtml(initials(c.full_name))}</span><div><div class="name">${escapeHtml(c.full_name)}</div><div class="sub"></div></div></div></td><td><span class="tag">${roleTag}</span></td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td><td>—</td></tr>`;
+        }).join('');
+    html = html.replace(
+      /(<thead><tr><th>Usuário<\/th><th>Papel<\/th><th>Status<\/th><th>Último acesso<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
+      `$1${rows}$2`
     );
   }
 
