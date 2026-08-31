@@ -25,7 +25,6 @@ export default function VerifyDemoPage() {
   const [success, setSuccess] = useState(false);
   const [successGlow, setSuccessGlow] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const digitsRef = useRef(digits);
@@ -73,7 +72,6 @@ export default function VerifyDemoPage() {
     setSuccess(false);
     setSuccessGlow(false);
     setLeaving(false);
-    setPulseIndex(null);
 
     let i = 0;
     const fake = ['4', '8', '2', '1', '9', '5'];
@@ -88,8 +86,6 @@ export default function VerifyDemoPage() {
         next[idx] = fake[idx];
         return next;
       });
-      setPulseIndex(idx);
-      setTimeout(() => setPulseIndex((p) => (p === idx ? null : p)), 350);
       i++;
     }, 350);
   }
@@ -150,7 +146,7 @@ export default function VerifyDemoPage() {
                     <div key={i} className={`code-cell ${digit ? 'filled' : ''}`}>
                       <input
                         ref={(el) => { inputRefs.current[i] = el; }}
-                        className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                        className={`code-input ${errorState ? 'error-state' : ''}`}
                         inputMode="numeric"
                         maxLength={1}
                         aria-label={`Dígito ${i + 1}`}

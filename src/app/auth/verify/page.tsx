@@ -32,7 +32,6 @@ export default function VerifyPage() {
   const [successGlow, setSuccessGlow] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(30);
-  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -150,8 +149,6 @@ export default function VerifyPage() {
     next[index] = clean;
     setDigits(next);
     if (clean) {
-      setPulseIndex(index);
-      setTimeout(() => setPulseIndex(null), 350);
       if (index < 5) inputRefs.current[index + 1]?.focus();
     }
   }
@@ -214,7 +211,7 @@ export default function VerifyPage() {
                   <div key={i} className={`code-cell ${digit ? 'filled' : ''}`}>
                     <input
                       ref={(el) => { inputRefs.current[i] = el; }}
-                      className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                      className={`code-input ${errorState ? 'error-state' : ''}`}
                       inputMode="numeric"
                       maxLength={1}
                       aria-label={`Dígito ${i + 1}`}
