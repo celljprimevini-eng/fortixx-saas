@@ -329,6 +329,19 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .demo-input-active { border-color: #f04d35; box-shadow: 0 0 0 1px rgba(240,77,53,.12), 0 0 16px rgba(240,77,53,.05); }
 .demo-input-complete { border-color: #ef604a; box-shadow: 0 0 0 1px rgba(239,96,74,.08); }
 
+/* Traço de borda desenhando ao preencher cada dígito ("LED correndo"),
+   confirmado quadro a quadro no vídeo (frames extraídos com ffmpeg): a
+   borda de cada caixa cresce como um traço, não troca de cor de uma vez.
+   <rect> com pathLength=100 -> stroke-dasharray funciona em porcentagem
+   do perímetro, então o efeito funciona igual em qualquer tamanho de
+   caixa. Sem mask/conic-gradient (mesma técnica robusta já usada antes). */
+.demo-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
+.demo-ring rect {
+  fill: none; stroke: #f04d35; stroke-width: 2; stroke-dasharray: 100;
+  stroke-dashoffset: 100; transition: stroke-dashoffset .45s cubic-bezier(.22,1,.36,1);
+}
+.demo-input-filled .demo-ring rect { stroke-dashoffset: 0; }
+
 .demo-cursor { position: absolute; width: 2px; height: 27px; background: #d8d8dc; animation: demoCursorBlink 800ms steps(1) infinite; }
 @keyframes demoCursorBlink { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
 

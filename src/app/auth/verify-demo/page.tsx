@@ -103,6 +103,9 @@ export default function VerifyDemoPage() {
                   >
                     {digit}
                     {isActive && <span className="demo-cursor" />}
+                    <svg className="demo-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                      <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
+                    </svg>
                   </div>
                 );
               })}
