@@ -187,11 +187,6 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 @keyframes shakeX { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
 .code-zone.shake { animation: shakeX .5s; }
 
-.code-scan-sweep { position: absolute; top: -8px; bottom: -8px; width: 38px; left: -38px; border-radius: 10px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(248,113,113,.55), transparent); filter: blur(2px); opacity: 0; }
-.code-scan-sweep.run { animation: scanSweep 1.5s ease-in-out .1s forwards; }
-@keyframes scanSweep { 0% { left: -38px; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
-
 /* Fusão de verdade (igual ao vídeo de referência): as 6 caixas deslizam pro
    centro e se sobrepõem, virando UM quadrado só — não uma barra esticada.
    Cada caixa translada em direção ao ponto médio entre a 3ª e a 4ª.
@@ -204,11 +199,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .code-zone.merging .code-input:nth-child(4) { transform: translateX(-27px); z-index: 4; }
 .code-zone.merging .code-input:nth-child(5) { transform: translateX(-82px); z-index: 5; }
 .code-zone.merging .code-input:nth-child(6) { transform: translateX(-137px); z-index: 6; }
-.code-zone.merged .code-row,
-.code-zone.merged .code-scan-sweep {
-  /* !important necessário: code-scan-sweep.run tem animation com fill-mode
-     forwards, cujo valor final de opacity vence uma declaração normal
-     (mesmo mais específica) sem !important. */
+.code-zone.merged .code-row {
   opacity: 0 !important; pointer-events: none; transition: opacity .2s var(--ease);
 }
 
@@ -244,9 +235,11 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    em produção — a máscara falhava e o gradiente cônico cru aparecia girando
    como um traço diagonal. Trocar pra border-image não resolveu (mesmo
    artefato, confirmado isolando o elemento) — removido de vez. A linha
-   conectora horizontal (.code-connect-line) também foi removida depois —
-   usuário pediu explicitamente pra tirar. A varredura (.code-scan-sweep) +
-   a convergência das caixas já dão feedback visual suficiente. */
+   conectora horizontal (.code-connect-line) também foi removida depois, e
+   por fim a varredura (.code-scan-sweep, uma barra vermelha desfocada
+   cruzando as caixas) também saiu — usuário identificou que ELA MESMA era
+   a "linha vermelha passando por cima" que não existe no vídeo de
+   referência. Só sobra a convergência das caixas + o badge. */
 
 .verify-status-wrap { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
 .verify-status-wrap.show { display: flex; animation: stepIn .35s var(--ease); }

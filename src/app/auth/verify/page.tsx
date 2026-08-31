@@ -25,7 +25,6 @@ export default function VerifyPage() {
   const [shake, setShake] = useState(false);
   const [merging, setMerging] = useState(false);
   const [merged, setMerged] = useState(false);
-  const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
   const [statusText, setStatusText] = useState('Verificando identidade...');
   const [verifying, setVerifying] = useState(false);
@@ -89,7 +88,6 @@ export default function VerifyPage() {
     setErrorMsg('');
 
     setMerging(true);
-    setTimeout(() => setScanRun(true), 80);
 
     setTimeout(() => {
       setStatusShow(true);
@@ -236,7 +234,6 @@ export default function VerifyPage() {
                   />
                 ))}
               </div>
-              <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
               <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
                 <span className="spinner" aria-hidden="true" />
                 <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
