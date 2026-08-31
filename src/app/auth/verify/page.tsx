@@ -25,7 +25,6 @@ export default function VerifyPage() {
   const [shake, setShake] = useState(false);
   const [merging, setMerging] = useState(false);
   const [merged, setMerged] = useState(false);
-  const [lineRun, setLineRun] = useState(false);
   const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
   const [statusText, setStatusText] = useState('Verificando identidade...');
@@ -90,20 +89,19 @@ export default function VerifyPage() {
     setErrorMsg('');
 
     setMerging(true);
-    setLineRun(true);
-    setTimeout(() => setScanRun(true), 50);
+    setTimeout(() => setScanRun(true), 80);
 
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
-    }, 500);
+    }, 700);
 
-    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 900);
-    setTimeout(() => setStatusText('Autorizando acesso...'), 1300);
+    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 1300);
+    setTimeout(() => setStatusText('Autorizando acesso...'), 1900);
     // Depois que as 6 caixas terminam de deslizar pro centro (transição de
-    // .45s no CSS), escondemos a fileira e mostramos o badge único no lugar
-    // — é o "quadrado só" que o usuário pediu, no mesmo espaço do código.
-    setTimeout(() => setMerged(true), 480);
+    // .8s no CSS, no ritmo do vídeo de referência), escondemos a fileira e
+    // mostramos o badge único no lugar — o "quadrado só" que o usuário pediu.
+    setTimeout(() => setMerged(true), 800);
 
     setTimeout(async () => {
       const code = digits.join('');
@@ -144,7 +142,7 @@ export default function VerifyPage() {
           setTimeout(() => router.push('/dashboard'), 350);
         }, 700);
       }, 300);
-    }, 1700);
+    }, 2500);
   }, [digits, allFilled, verifying, verifyCode, router]);
 
   useEffect(() => {
@@ -236,7 +234,6 @@ export default function VerifyPage() {
                   />
                 ))}
               </div>
-              <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
               <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
               <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
                 <span className="spinner" aria-hidden="true" />
