@@ -197,7 +197,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    Cada caixa translada em direção ao ponto médio entre a 3ª e a 4ª.
    Duração aumentada (.45s -> .8s) pra sentir o mesmo ritmo do vídeo, que
    não é instantâneo. */
-.code-zone.merging .code-input { transition: transform .8s var(--ease), opacity .3s var(--ease) .5s; }
+.code-zone.merging .code-input { transition: transform 1s var(--ease), opacity .3s var(--ease) .5s; }
 .code-zone.merging .code-input:nth-child(1) { transform: translateX(137px); z-index: 1; }
 .code-zone.merging .code-input:nth-child(2) { transform: translateX(82px); z-index: 2; }
 .code-zone.merging .code-input:nth-child(3) { transform: translateX(27px); z-index: 3; }
@@ -227,11 +227,16 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .merge-badge.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .merge-badge.success { background: rgba(52,211,153,.14); border-color: rgba(52,211,153,.6); box-shadow: 0 0 24px rgba(52,211,153,.4); }
 .merge-badge svg { width: 20px; height: 20px; }
-.merge-badge .spinner { width: 16px; height: 16px; border: 2px solid rgba(248,113,113,.3); border-top-color: var(--red); }
-.merge-badge.success .spinner { display: none; }
-.merge-badge .check-icon { display: none; color: var(--green); }
-.merge-badge.success .check-icon { display: block; animation: checkPop .35s var(--ease); }
-@keyframes checkPop { 0% { transform: scale(.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.merge-badge .spinner {
+  width: 16px; height: 16px; border: 2px solid rgba(248,113,113,.3); border-top-color: var(--red);
+  position: absolute; opacity: 1; transition: opacity .35s var(--ease);
+}
+.merge-badge.success .spinner { opacity: 0; }
+.merge-badge .check-icon {
+  position: absolute; opacity: 0; color: var(--green); transform: scale(.6);
+  transition: opacity .35s var(--ease) .15s, transform .35s var(--ease) .15s;
+}
+.merge-badge.success .check-icon { opacity: 1; transform: scale(1); }
 /* Existia aqui um anel de "LED chase" (borda giratória) ao redor dos dígitos
    durante a verificação, feito com um conic-gradient quase todo transparente
    (só ~24% colorido) tentando virar um anel fino via mask-composite: exclude.

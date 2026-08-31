@@ -94,14 +94,14 @@ export default function VerifyPage() {
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
-    }, 700);
+    }, 900);
 
-    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 1300);
-    setTimeout(() => setStatusText('Autorizando acesso...'), 1900);
-    // Depois que as 6 caixas terminam de deslizar pro centro (transição de
-    // .8s no CSS, no ritmo do vídeo de referência), escondemos a fileira e
-    // mostramos o badge único no lugar — o "quadrado só" que o usuário pediu.
-    setTimeout(() => setMerged(true), 800);
+    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 1700);
+    setTimeout(() => setStatusText('Autorizando acesso...'), 2500);
+    // As caixas levam 1s pra convergir (CSS). Só trocamos pelo badge 300ms
+    // DEPOIS disso — folga de propósito, senão a fileira sumia enquanto
+    // ainda estava visivelmente em movimento e parecia um corte brusco.
+    setTimeout(() => setMerged(true), 1300);
 
     setTimeout(async () => {
       const code = digits.join('');
@@ -137,12 +137,14 @@ export default function VerifyPage() {
       setTimeout(() => {
         setSuccess(true);
         setSuccessGlow(true);
+        // Dá tempo real de ver o badge verde antes de sair da tela — antes
+        // eram só 700ms, passava rápido demais pra perceber a confirmação.
         setTimeout(() => {
           setLeaving(true);
-          setTimeout(() => router.push('/dashboard'), 350);
-        }, 700);
+          setTimeout(() => router.push('/dashboard'), 500);
+        }, 1400);
       }, 300);
-    }, 2500);
+    }, 3200);
   }, [digits, allFilled, verifying, verifyCode, router]);
 
   useEffect(() => {
