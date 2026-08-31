@@ -5,15 +5,16 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * 2FA REAL via TOTP (Supabase Auth MFA). Visual 1:1 com o protótipo
- * fortixx-login.html: fusão dos 6 campos num componente único, LED chase,
- * linha conectora, varredura, sequência "Verificando... Processando...
- * Autorizando...", sucesso com anel dourado, erro com shake.
+ * 2FA REAL via TOTP (Supabase Auth MFA). Animação em camadas empilhadas
+ * (crossfade), igual ao vídeo de referência analisado quadro a quadro:
+ * NÃO é um slide de caixas convergindo pro centro — é um formulário que
+ * desaparece (fade + scale) enquanto um spinner (mesma posição/tamanho)
+ * aparece por cima, e depois o spinner dá lugar ao check de sucesso.
  *
- * A única coisa que deixou de ser simulada é o verifyCode(): antes
- * qualquer 6 dígitos passava (exceto "000000"); agora é validado de
- * verdade contra o fator TOTP cadastrado no Supabase.
+ * verifyCode() é real (Supabase MFA), não simulado.
  */
+type Phase = 'idle' | 'verifying' | 'success';
+
 export default function VerifyPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -23,15 +24,12 @@ export default function VerifyPage() {
   const [errorState, setErrorState] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
-  const [merging, setMerging] = useState(false);
-  const [merged, setMerged] = useState(false);
-  const [statusShow, setStatusShow] = useState(false);
-  const [statusText, setStatusText] = useState('Verificando identidade...');
-  const [verifying, setVerifying] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [checkDraw, setCheckDraw] = useState(false);
   const [successGlow, setSuccessGlow] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(30);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -47,8 +45,7 @@ export default function VerifyPage() {
     // Todas as chamadas do Supabase abaixo podem REJEITAR a Promise (rede
     // caindo no meio, timeout, resposta inesperada) em vez de só retornar um
     // `error` no objeto — sem o try/catch, uma rejeição aqui travava a tela
-    // pra sempre: inputs desabilitados (cinza), sem nenhuma animação rodando,
-    // porque o código nunca chegava no branch de sucesso OU erro.
+    // pra sempre.
     try {
       const { data: factors } = await supabase.auth.mfa.listFactors();
       const totpFactor = factors?.totp?.[0];
@@ -80,61 +77,41 @@ export default function VerifyPage() {
   }, [supabase]);
 
   const beginVerification = useCallback(async () => {
-    if (verifying || !allFilled) return;
-    setVerifying(true);
+    if (phase !== 'idle' || !allFilled) return;
     setDisabled(true);
     setErrorState(false);
     setErrorMsg('');
+    setPhase('verifying');
 
-    setMerging(true);
+    const code = digits.join('');
+    const result = await verifyCode(code);
 
-    // No vídeo de referência a fusão inteira até "verificado" leva menos de
-    // 1s no total — nada de texto de progresso fake ("Verificando...
-    // Processando... Autorizando...") esperando por tempo fixo. As caixas
-    // convergem em .4s (CSS) e a chamada real ao Supabase já começa em
-    // paralelo — o spinner do badge é o único indicador de espera, e só
-    // aparece texto extra se a rede realmente estiver lenta.
-    setTimeout(() => setMerged(true), 400);
-    setTimeout(() => {
-      setStatusShow(true);
-      setStatusText('Verificando identidade...');
-    }, 420);
-
-    (async () => {
-      const code = digits.join('');
-      const slowNotice = setTimeout(() => {
-        setStatusText('Ainda verificando... a conexão está mais lenta que o normal.');
-      }, 4000);
-      const result = await verifyCode(code);
-      clearTimeout(slowNotice);
-
-      if (!result.ok) {
-        setVerifying(false);
-        setStatusShow(false);
-        setMerged(false);
-        setMerging(false);
-        setShake(true);
-        setErrorState(true);
-        setErrorMsg(result.message);
-        setTimeout(() => setShake(false), 520);
-        setTimeout(() => {
-          setDigits(['', '', '', '', '', '']);
-          setErrorState(false);
-          setDisabled(false);
-          inputRefs.current[0]?.focus();
-        }, 650);
-        return;
-      }
-
-      setStatusText('Identidade verificada com sucesso.');
-      setSuccess(true);
-      setSuccessGlow(true);
+    if (!result.ok) {
+      // Volta o formulário (o vídeo de referência não cobre o caso de
+      // erro — mantido do jeito que já funcionava: shake + mensagem).
+      setPhase('idle');
+      setShake(true);
+      setErrorState(true);
+      setErrorMsg(result.message);
+      setTimeout(() => setShake(false), 520);
       setTimeout(() => {
-        setLeaving(true);
-        setTimeout(() => router.push('/dashboard'), 500);
-      }, 900);
-    })();
-  }, [digits, allFilled, verifying, verifyCode, router]);
+        setDigits(['', '', '', '', '', '']);
+        setErrorState(false);
+        setDisabled(false);
+        setActiveIndex(0);
+        inputRefs.current[0]?.focus();
+      }, 650);
+      return;
+    }
+
+    setPhase('success');
+    setSuccessGlow(true);
+    setTimeout(() => setCheckDraw(true), 120);
+    setTimeout(() => {
+      setLeaving(true);
+      setTimeout(() => router.push('/dashboard'), 500);
+    }, 1600);
+  }, [digits, allFilled, phase, verifyCode, router]);
 
   useEffect(() => {
     if (allFilled) {
@@ -149,12 +126,17 @@ export default function VerifyPage() {
     next[index] = clean;
     setDigits(next);
     if (clean) {
-      if (index < 5) inputRefs.current[index + 1]?.focus();
+      const nextIndex = index < 5 ? index + 1 : -1;
+      setActiveIndex(nextIndex);
+      if (nextIndex >= 0) inputRefs.current[nextIndex]?.focus();
+    } else {
+      setActiveIndex(index);
     }
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
+      setActiveIndex(index - 1);
       inputRefs.current[index - 1]?.focus();
     }
   }
@@ -166,6 +148,7 @@ export default function VerifyPage() {
     pasted.forEach((d, i) => { next[i] = d; });
     setDigits(next);
     const focusIndex = Math.min(pasted.length, 5);
+    setActiveIndex(pasted.length >= 6 ? -1 : focusIndex);
     inputRefs.current[focusIndex]?.focus();
   }
 
@@ -175,11 +158,14 @@ export default function VerifyPage() {
     setDisabled(false);
     setErrorState(false);
     setErrorMsg('');
-    setStatusShow(false);
-    setVerifying(false);
+    setPhase('idle');
+    setActiveIndex(0);
     setResendSeconds(30);
     inputRefs.current[0]?.focus();
   }
+
+  const isVerifying = phase === 'verifying';
+  const isSuccess = phase === 'success';
 
   return (
     <>
@@ -191,27 +177,24 @@ export default function VerifyPage() {
         <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
 
           {/*
-            Fica tudo no MESMO card/quadro o tempo todo — as 6 caixas, o
-            badge de fusão e a mensagem de sucesso nunca trocam pra uma
-            seção separada. Só o título/subtítulo e o conteúdo do badge
-            mudam conforme o estado (igual ao vídeo de referência).
+            Três camadas empilhadas na MESMA posição (crossfade), não uma
+            transição de slide: form (6 caixas) -> spinner -> sucesso.
           */}
           <div className="login-step active" id="step2fa">
-            <span className="login-eyebrow">Verificação em duas etapas</span>
-            <h1 className="login-title">{success ? 'Identidade verificada com sucesso.' : 'Confirme seu acesso'}</h1>
-            <p className="login-sub">
-              {success
-                ? 'Preparando seu painel...'
-                : 'Digite o código de 6 dígitos do seu aplicativo autenticador.'}
-            </p>
+            <div className={`otp-form ${!isVerifying && !isSuccess ? '' : 'otp-form-hidden'}`}>
+              <span className="login-eyebrow">Verificação em duas etapas</span>
+              <h1 className="login-title">Confirme seu acesso</h1>
+              <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
 
-            <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''} ${merged ? 'merged' : ''}`} id="codeZone">
-              <div className="code-row" id="codeRow">
+              <div className={`code-row ${shake ? 'shake' : ''}`} id="codeRow">
                 {digits.map((digit, i) => (
-                  <div key={i} className={`code-cell ${digit ? 'filled' : ''}`}>
+                  <div
+                    key={i}
+                    className={`code-cell ${activeIndex === i ? 'active' : ''} ${digit ? 'filled' : ''} ${errorState ? 'error-state' : ''}`}
+                  >
                     <input
                       ref={(el) => { inputRefs.current[i] = el; }}
-                      className={`code-input ${errorState ? 'error-state' : ''}`}
+                      className="code-input"
                       inputMode="numeric"
                       maxLength={1}
                       aria-label={`Dígito ${i + 1}`}
@@ -221,43 +204,38 @@ export default function VerifyPage() {
                       onKeyDown={(e) => handleKeyDown(i, e)}
                       onPaste={handlePaste}
                     />
-                    <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="2" y="2" width="96" height="96" rx="18" ry="18" pathLength={100} />
-                    </svg>
+                    {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
                   </div>
                 ))}
               </div>
-              <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
-                <svg className="merge-ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-                  <rect x="1.5" y="1.5" width="97" height="37" rx="10" ry="10" pathLength={100} />
-                </svg>
-                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
-              </div>
-            </div>
 
-            {!success && <p className="error-text">{errorMsg}</p>}
+              <p className="error-text">{errorMsg}</p>
 
-            {!success && (
-              <div className={`verify-status-wrap ${statusShow ? 'show' : ''}`}>
-                <div className="ai-pulse-icon" aria-hidden="true"><span /><span /><span /></div>
-                <p className="verify-status-text">{statusText}</p>
-              </div>
-            )}
-
-            {!success && (
-              <button className="btn btn-primary" disabled={!allFilled || verifying} onClick={beginVerification}>
+              <button className="btn btn-primary" disabled={!allFilled || isVerifying} onClick={beginVerification}>
                 Verificar
               </button>
-            )}
 
-            {!success && (
               <div className="resend-row">
                 Não recebeu?{' '}
                 <button className={`link-accent ${resendSeconds === 0 ? 'activated' : ''}`} disabled={resendSeconds > 0} onClick={handleResend}>
                   {resendSeconds > 0 ? `Reenviar código (${resendSeconds}s)` : 'Reenviar código'}
                 </button>
               </div>
-            )}
+            </div>
+
+            <div className={`otp-verifying ${isVerifying ? 'otp-verifying-visible' : ''}`} aria-hidden={!isVerifying}>
+              <div className="otp-spinner"><span /></div>
+            </div>
+
+            <div className={`otp-success ${isSuccess ? 'otp-success-visible' : ''}`} aria-hidden={!isSuccess}>
+              <h1 className="login-title">Identidade verificada com sucesso.</h1>
+              <p className="login-sub">Preparando seu painel...</p>
+              <div className="otp-check-box">
+                <svg className={`otp-check ${checkDraw ? 'otp-check-draw' : ''}`} viewBox="0 0 52 52" aria-hidden="true">
+                  <path d="M14 27.5L23 36L39 17" pathLength={100} />
+                </svg>
+              </div>
+            </div>
           </div>
 
         </div>

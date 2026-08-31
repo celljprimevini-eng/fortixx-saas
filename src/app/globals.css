@@ -118,20 +118,17 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .back-row svg { width: 15px; height: 15px; }
 
 .code-row { display: flex; gap: 9px; margin-top: 18px; justify-content: space-between; transition: gap .35s var(--ease); }
+/* Estado por dígito: transição simples de border-color/box-shadow (igual
+   ao vídeo de referência — NÃO é um traço de borda se desenhando, é só
+   a cor da borda mudando em .18s quando o campo fica ativo/preenchido). */
 .code-cell { position: relative; width: 46px; height: 56px; }
-.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .2s, box-shadow .2s, transform .15s; }
-.code-input:focus { border-color: var(--blue-light); }
-
-/* Traço de borda desenhando em cada caixa ao digitar ("LED correndo"),
-   igual ao vídeo de referência: um <rect> com pathLength=100 cujo
-   stroke-dashoffset vai de 100 (invisível) a 0 (contorno completo) assim
-   que o dígito é preenchido — SVG puro, sem mask/conic-gradient. */
-.code-cell .cell-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
-.code-cell .cell-ring rect {
-  fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 100;
-  stroke-dashoffset: 100; transition: stroke-dashoffset .4s var(--ease);
-}
-.code-cell.filled .cell-ring rect { stroke-dashoffset: 0; }
+.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .18s ease, box-shadow .18s ease, transform .15s; }
+.code-cell.active .code-input { border-color: var(--red); box-shadow: 0 0 0 1px rgba(248,113,113,.12), 0 0 16px rgba(248,113,113,.08); }
+.code-cell.filled .code-input { border-color: rgba(239,96,74,.75); box-shadow: 0 0 0 1px rgba(239,96,74,.1); }
+.code-cell.error-state .code-input { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.16); }
+.code-input:disabled { opacity: .8; }
+.code-cursor { position: absolute; top: 50%; left: 50%; width: 2px; height: 27px; transform: translate(-50%, -50%); background: var(--text-2); animation: cursorBlink .8s steps(1) infinite; pointer-events: none; }
+@keyframes cursorBlink { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
 
 .resend-row { text-align: center; margin-top: 18px; font-size: .82rem; color: var(--text-3); }
 .resend-row button { font-size: inherit; }
@@ -186,83 +183,59 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 /* ===================================================================
    CODE INPUTS — glow ao digitar, microanimação
 =================================================================== */
-.code-zone { position: relative; }
-.code-input.error-state { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.16); }
-.code-input:disabled { opacity: .8; }
 @keyframes shakeX { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
-.code-zone.shake { animation: shakeX .5s; }
+.code-row.shake { animation: shakeX .5s; }
 
-/* Fusão de verdade (igual ao vídeo de referência): as 6 caixas deslizam pro
-   centro e se sobrepõem, virando UM quadrado só — não uma barra esticada.
-   Cada caixa translada em direção ao ponto médio entre a 3ª e a 4ª. No
-   vídeo de referência (frames extraídos com ffmpeg) essa fusão inteira leva
-   menos de meio segundo — .4s aqui, não 1s.
-   No vídeo, assim que a fusão começa o número e o fundo escuro de cada
-   caixa somem quase instantaneamente — sobra só o CONTORNO. É isso que faz
-   a sobreposição parecer "sólida" (contornos limpos empilhando) em vez de
-   caixas cheias com dígito borrado por baixo umas das outras. */
-.code-zone.merging .code-input {
-  transition: opacity .2s var(--ease) .2s, color .12s var(--ease), background .12s var(--ease);
-  color: transparent; background: transparent; caret-color: transparent;
+/*
+ * Animação em CAMADAS EMPILHADAS (crossfade), confirmado contra o vídeo
+ * de referência: NÃO é um slide de caixas convergindo pro centro — é um
+ * <form> que desaparece (fade + scale para baixo) enquanto um spinner de
+ * mesmo tamanho/posição aparece por cima, e o spinner dá lugar ao check
+ * de sucesso do mesmo jeito. #step2fa é o container relative; as três
+ * camadas (form/spinner/success) ficam absolute, sobrepostas.
+ */
+#step2fa { position: relative; min-height: 340px; }
+.otp-form {
+  opacity: 1; transform: translateY(0) scale(1);
+  transition: opacity .38s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
 }
-.code-zone.merging .cell-ring { opacity: 0; transition: opacity .12s var(--ease); }
-.code-zone.merging .code-cell { transition: transform .4s var(--ease); }
-.code-zone.merging .code-cell:nth-child(1) { transform: translateX(137px); z-index: 1; }
-.code-zone.merging .code-cell:nth-child(2) { transform: translateX(82px); z-index: 2; }
-.code-zone.merging .code-cell:nth-child(3) { transform: translateX(27px); z-index: 3; }
-.code-zone.merging .code-cell:nth-child(4) { transform: translateX(-27px); z-index: 4; }
-.code-zone.merging .code-cell:nth-child(5) { transform: translateX(-82px); z-index: 5; }
-.code-zone.merging .code-cell:nth-child(6) { transform: translateX(-137px); z-index: 6; }
-.code-zone.merged .code-row {
-  opacity: 0 !important; pointer-events: none; transition: opacity .2s var(--ease);
-}
+.otp-form-hidden { position: absolute; inset: 0; opacity: 0; transform: translateY(-12px) scale(.96); pointer-events: none; }
 
-/* O "badge" que fica no lugar das caixas depois que elas se juntam. No
-   vídeo de referência ele ocupa a LARGURA INTEIRA da fileira (não um
-   quadradinho pequeno) e mostra um traço de borda vermelho "correndo" ao
-   redor enquanto verifica — isso é o "LED correndo" que o usuário via e
-   pediu várias vezes. Vira verde com o check quando confirma. Fica no
-   MESMO lugar/quadro do código, não troca pra uma tela separada. */
-.merge-badge {
-  position: absolute; top: 50%; left: 50%; width: 100%; height: 56px;
-  transform: translate(-50%, -50%) scale(.85); border-radius: var(--radius-sm);
-  background: rgba(248,113,113,.1);
+.otp-verifying {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(.75); pointer-events: none;
+  transition: opacity .25s ease, transform .5s cubic-bezier(.16,1,.3,1);
+}
+.otp-verifying-visible { opacity: 1; transform: scale(1); }
+.otp-spinner {
+  width: 74px; height: 66px; border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(248,113,113,.55); background: rgba(248,113,113,.08);
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s var(--ease), transform .3s var(--ease), background .4s var(--ease);
 }
-.merge-badge.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.merge-badge.success { background: rgba(52,211,153,.1); box-shadow: 0 0 24px rgba(52,211,153,.35); }
-.merge-badge svg.check-icon { width: 22px; height: 22px; }
-
-/* Anel de "LED correndo": um <rect> arredondado com pathLength=100, então
-   stroke-dasharray funciona em PORCENTAGEM do perímetro (26 visível / 74
-   vazio) independente da largura real do badge — animando stroke-dashoffset
-   em loop dá o efeito de um segmento de luz correndo pela borda. Técnica
-   puramente de stroke (sem mask/conic-gradient), então não sofre do bug de
-   linha diagonal que a tentativa antiga (mask-composite: exclude) causava. */
-.merge-ring { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; transition: opacity .3s var(--ease); }
-.merge-ring rect {
-  fill: none; stroke: var(--red); stroke-width: 2.5; stroke-linecap: round;
-  stroke-dasharray: 26 74; animation: ledChase 1.4s linear infinite;
+.otp-spinner span {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2.5px solid rgba(248,113,113,.25); border-top-color: var(--red);
+  animation: spinnerRotate .7s linear infinite;
 }
-.merge-badge.success .merge-ring { opacity: 0; }
-@keyframes ledChase { to { stroke-dashoffset: -100; } }
+@keyframes spinnerRotate { to { transform: rotate(360deg); } }
 
-.merge-badge .check-icon {
-  position: absolute; opacity: 0; color: var(--green); transform: scale(.6);
-  transition: opacity .35s var(--ease) .15s, transform .35s var(--ease) .15s;
+.otp-success {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; text-align: center;
+  opacity: 0; transform: translateY(15px) scale(.96); pointer-events: none;
+  transition: opacity .55s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1);
 }
-.merge-badge.success .check-icon { opacity: 1; transform: scale(1); }
-
-.verify-status-wrap { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
-.verify-status-wrap.show { display: flex; animation: stepIn .35s var(--ease); }
-.verify-status-text { font-size: .86rem; color: var(--text-2); font-weight: 500; }
-.ai-pulse-icon { display: flex; gap: 4px; }
-.ai-pulse-icon span { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: aiPulse 1s ease-in-out infinite; }
-.ai-pulse-icon span:nth-child(2) { animation-delay: .15s; }
-.ai-pulse-icon span:nth-child(3) { animation-delay: .3s; }
-@keyframes aiPulse { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-5px); opacity: 1; } }
+.otp-success-visible { opacity: 1; transform: translateY(0) scale(1); }
+.otp-check-box {
+  width: 58px; height: 58px; margin-top: 22px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--green); background: rgba(10,15,13,.4);
+  animation: checkBoxGlow 1.1s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes checkBoxGlow { 0% { box-shadow: 0 0 0 rgba(52,211,153,0); } 45% { box-shadow: 0 0 32px rgba(52,211,153,.3); } 100% { box-shadow: 0 0 19px rgba(52,211,153,.16); } }
+.otp-check { width: 30px; height: 30px; overflow: visible; }
+.otp-check path { fill: none; stroke: #f5f7f6; stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.otp-check-draw path { animation: drawCheck .62s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
 /* ===================================================================
    SUCCESS — check, pulso, glow dourado
