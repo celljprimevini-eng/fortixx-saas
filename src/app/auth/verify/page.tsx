@@ -5,16 +5,15 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * 2FA REAL via TOTP (Supabase Auth MFA). Animação em camadas empilhadas
- * (crossfade), igual ao vídeo de referência analisado quadro a quadro:
- * NÃO é um slide de caixas convergindo pro centro — é um formulário que
- * desaparece (fade + scale) enquanto um spinner (mesma posição/tamanho)
- * aparece por cima, e depois o spinner dá lugar ao check de sucesso.
+ * 2FA REAL via TOTP (Supabase Auth MFA). Visual 1:1 com o protótipo
+ * fortixx-login.html: fusão dos 6 campos num componente único, LED chase,
+ * linha conectora, varredura, sequência "Verificando... Processando...
+ * Autorizando...", sucesso com anel dourado, erro com shake.
  *
- * verifyCode() é real (Supabase MFA), não simulado.
+ * A única coisa que deixou de ser simulada é o verifyCode(): antes
+ * qualquer 6 dígitos passava (exceto "000000"); agora é validado de
+ * verdade contra o fator TOTP cadastrado no Supabase.
  */
-type Phase = 'idle' | 'verifying' | 'success';
-
 export default function VerifyPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -24,14 +23,17 @@ export default function VerifyPage() {
   const [errorState, setErrorState] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [checkDraw, setCheckDraw] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [lineRun, setLineRun] = useState(false);
+  const [scanRun, setScanRun] = useState(false);
+  const [statusShow, setStatusShow] = useState(false);
+  const [statusText, setStatusText] = useState('Verificando identidade...');
+  const [verifying, setVerifying] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [successGlow, setSuccessGlow] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(30);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [pulseIndex, setPulseIndex] = useState<number | null>(null);
-  const [grouping, setGrouping] = useState(false);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -47,7 +49,8 @@ export default function VerifyPage() {
     // Todas as chamadas do Supabase abaixo podem REJEITAR a Promise (rede
     // caindo no meio, timeout, resposta inesperada) em vez de só retornar um
     // `error` no objeto — sem o try/catch, uma rejeição aqui travava a tela
-    // pra sempre.
+    // pra sempre: inputs desabilitados (cinza), sem nenhuma animação rodando,
+    // porque o código nunca chegava no branch de sucesso OU erro.
     try {
       const { data: factors } = await supabase.auth.mfa.listFactors();
       const totpFactor = factors?.totp?.[0];
@@ -79,52 +82,69 @@ export default function VerifyPage() {
   }, [supabase]);
 
   const beginVerification = useCallback(async () => {
-    if (phase !== 'idle' || !allFilled) return;
+    if (verifying || !allFilled) return;
+    setVerifying(true);
     setDisabled(true);
     setErrorState(false);
     setErrorMsg('');
-    setPhase('verifying');
 
-    const code = digits.join('');
-    const result = await verifyCode(code);
+    setMerging(true);
+    setLineRun(true);
+    setTimeout(() => setScanRun(true), 50);
 
-    if (!result.ok) {
-      // Volta o formulário (o vídeo de referência não cobre o caso de
-      // erro — mantido do jeito que já funcionava: shake + mensagem).
-      setPhase('idle');
-      setShake(true);
-      setErrorState(true);
-      setErrorMsg(result.message);
-      setTimeout(() => setShake(false), 520);
-      setTimeout(() => {
-        setDigits(['', '', '', '', '', '']);
-        setErrorState(false);
-        setDisabled(false);
-        setActiveIndex(0);
-        inputRefs.current[0]?.focus();
-      }, 650);
-      return;
-    }
-
-    setPhase('success');
-    setSuccessGlow(true);
-    setTimeout(() => setCheckDraw(true), 120);
     setTimeout(() => {
-      setLeaving(true);
-      setTimeout(() => router.push('/dashboard'), 500);
-    }, 1600);
-  }, [digits, allFilled, phase, verifyCode, router]);
+      setStatusShow(true);
+      setStatusText('Verificando identidade...');
+    }, 500);
+
+    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 900);
+    setTimeout(() => setStatusText('Autorizando acesso...'), 1300);
+
+    setTimeout(async () => {
+      const code = digits.join('');
+      // A verificação depende de 2 chamadas de rede pro Supabase (challenge +
+      // verify) e pode demorar alguns segundos dependendo da rede — sem esse
+      // aviso, depois de "Autorizando acesso..." a tela fica com texto parado
+      // por vários segundos e passa a impressão de estar travada.
+      const slowNotice = setTimeout(() => {
+        setStatusText('Ainda verificando... a conexão está mais lenta que o normal.');
+      }, 4000);
+      const result = await verifyCode(code);
+      clearTimeout(slowNotice);
+
+      if (!result.ok) {
+        setVerifying(false);
+        setStatusShow(false);
+        setShake(true);
+        setMerging(false);
+        setErrorState(true);
+        setErrorMsg(result.message);
+        setTimeout(() => setShake(false), 520);
+        setTimeout(() => {
+          setDigits(['', '', '', '', '', '']);
+          setErrorState(false);
+          setDisabled(false);
+          inputRefs.current[0]?.focus();
+        }, 650);
+        return;
+      }
+
+      setStatusText('Identidade verificada com sucesso.');
+      setTimeout(() => {
+        setSuccess(true);
+        setSuccessGlow(true);
+        setTimeout(() => {
+          setLeaving(true);
+          setTimeout(() => router.push('/dashboard'), 350);
+        }, 700);
+      }, 300);
+    }, 1700);
+  }, [digits, allFilled, verifying, verifyCode, router]);
 
   useEffect(() => {
     if (allFilled) {
-      // Igual ao vídeo: depois do último dígito, um LED corre ao REDOR DA
-      // FILEIRA INTEIRA (não mais por caixa) antes de começar a fusão.
-      const t1 = setTimeout(() => setGrouping(true), 250);
-      const t2 = setTimeout(() => {
-        setGrouping(false);
-        beginVerification();
-      }, 1150);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+      const t = setTimeout(() => beginVerification(), 150);
+      return () => clearTimeout(t);
     }
   }, [allFilled, beginVerification]);
 
@@ -134,21 +154,14 @@ export default function VerifyPage() {
     next[index] = clean;
     setDigits(next);
     if (clean) {
-      // O traço de cada caixa é um flash rápido (aparece e some), não fica
-      // desenhado — igual ao vídeo de referência.
       setPulseIndex(index);
-      setTimeout(() => setPulseIndex((p) => (p === index ? null : p)), 1100);
-      const nextIndex = index < 5 ? index + 1 : -1;
-      setActiveIndex(nextIndex);
-      if (nextIndex >= 0) inputRefs.current[nextIndex]?.focus();
-    } else {
-      setActiveIndex(index);
+      setTimeout(() => setPulseIndex(null), 350);
+      if (index < 5) inputRefs.current[index + 1]?.focus();
     }
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      setActiveIndex(index - 1);
       inputRefs.current[index - 1]?.focus();
     }
   }
@@ -160,7 +173,6 @@ export default function VerifyPage() {
     pasted.forEach((d, i) => { next[i] = d; });
     setDigits(next);
     const focusIndex = Math.min(pasted.length, 5);
-    setActiveIndex(pasted.length >= 6 ? -1 : focusIndex);
     inputRefs.current[focusIndex]?.focus();
   }
 
@@ -170,14 +182,11 @@ export default function VerifyPage() {
     setDisabled(false);
     setErrorState(false);
     setErrorMsg('');
-    setPhase('idle');
-    setActiveIndex(0);
+    setStatusShow(false);
+    setVerifying(false);
     setResendSeconds(30);
     inputRefs.current[0]?.focus();
   }
-
-  const isVerifying = phase === 'verifying';
-  const isSuccess = phase === 'success';
 
   return (
     <>
@@ -186,53 +195,44 @@ export default function VerifyPage() {
       </div>
       <main className="login-main">
       <div className="login-card-wrap">
-        <div className={`login-card glass verify-2fa ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
-          <div className="verify-2fa-handle" aria-hidden="true" />
+        <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
 
-          {/*
-            Três camadas empilhadas na MESMA posição (crossfade), não uma
-            transição de slide: form (6 caixas) -> spinner -> sucesso.
-          */}
-          <div className="login-step active" id="step2fa">
-            <div className={`otp-form ${!isVerifying && !isSuccess ? '' : 'otp-form-hidden'}`}>
+          {!success && (
+            <div className="login-step active" id="step2fa">
               <span className="login-eyebrow">Verificação em duas etapas</span>
               <h1 className="login-title">Confirme seu acesso</h1>
               <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
 
-              <div className={`code-row-wrap ${grouping ? 'grouping' : ''}`}>
-                <div className={`code-row ${shake ? 'shake' : ''}`} id="codeRow">
+              <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''}`} id="codeZone">
+                <div className="code-row" id="codeRow">
                   {digits.map((digit, i) => (
-                    <div
+                    <input
                       key={i}
-                      className={`code-cell ${activeIndex === i ? 'active' : ''} ${digit ? 'filled' : ''} ${pulseIndex === i ? 'pulsing' : ''} ${errorState ? 'error-state' : ''}`}
-                    >
-                      <input
-                        ref={(el) => { inputRefs.current[i] = el; }}
-                        className="code-input"
-                        inputMode="numeric"
-                        maxLength={1}
-                        aria-label={`Dígito ${i + 1}`}
-                        value={digit}
-                        disabled={disabled}
-                        onChange={(e) => handleChange(i, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(i, e)}
-                        onPaste={handlePaste}
-                      />
-                      {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
-                      <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                        <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
-                      </svg>
-                    </div>
+                      ref={(el) => { inputRefs.current[i] = el; }}
+                      className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                      inputMode="numeric"
+                      maxLength={1}
+                      aria-label={`Dígito ${i + 1}`}
+                      value={digit}
+                      disabled={disabled}
+                      onChange={(e) => handleChange(i, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(i, e)}
+                      onPaste={handlePaste}
+                    />
                   ))}
                 </div>
-                <svg className="group-ring" viewBox="0 0 330 72" preserveAspectRatio="none" aria-hidden="true">
-                  <rect x="2" y="2" width="326" height="68" rx="20" ry="20" pathLength={100} />
-                </svg>
+                <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
+                <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
               </div>
 
               <p className="error-text">{errorMsg}</p>
 
-              <button className="btn btn-primary" disabled={!allFilled || isVerifying} onClick={beginVerification}>
+              <div className={`verify-status-wrap ${statusShow ? 'show' : ''}`}>
+                <div className="ai-pulse-icon" aria-hidden="true"><span /><span /><span /></div>
+                <p className="verify-status-text">{statusText}</p>
+              </div>
+
+              <button className="btn btn-primary" disabled={!allFilled || verifying} onClick={beginVerification}>
                 Verificar
               </button>
 
@@ -243,21 +243,21 @@ export default function VerifyPage() {
                 </button>
               </div>
             </div>
+          )}
 
-            <div className={`otp-verifying ${isVerifying ? 'otp-verifying-visible' : ''}`} aria-hidden={!isVerifying}>
-              <div className="otp-spinner"><span /></div>
-            </div>
-
-            <div className={`otp-success ${isSuccess ? 'otp-success-visible' : ''}`} aria-hidden={!isSuccess}>
-              <h1 className="login-title">Identidade verificada com sucesso.</h1>
-              <p className="login-sub">Preparando seu painel...</p>
-              <div className="otp-check-box">
-                <svg className={`otp-check ${checkDraw ? 'otp-check-draw' : ''}`} viewBox="0 0 52 52" aria-hidden="true">
-                  <path d="M14 27.5L23 36L39 17" pathLength={100} />
-                </svg>
+          {success && (
+            <div className="login-step active" id="stepSuccess">
+              <div className="success-wrap">
+                <div className="success-icon gold pulse">
+                  <div className="success-icon-ring" />
+                  <div className="success-icon-ring-outer" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <h1 className="login-title">Identidade verificada com sucesso.</h1>
+                <p className="login-sub"><span className="spinner" aria-hidden="true" />&nbsp; Preparando seu painel...</p>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
