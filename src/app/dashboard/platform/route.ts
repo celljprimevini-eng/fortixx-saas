@@ -29,6 +29,20 @@ import { platformScript } from '../_platform/script';
  * (Configurações→Usuários) poder chamar api/onboarding vinculando o novo
  * usuário ao MESMO tenant (sem isso o RPC provision_user_tenant criaria uma
  * empresa nova).
+ *
+ * 2026-08-31 (parte 2, somente leitura): Colaboradores→Hierarquia da Empresa
+ * passa a montar a árvore real a partir de profiles.manager_id (a coluna
+ * existe no schema — 0001_initial_schema.sql), em vez de nomes fixos.
+ * Onboarding→Documentos passa a listar a tabela `documents` real (já
+ * alimentada pelo webhook n8n em api/webhooks/n8n), removendo os logs de
+ * OCR simulados. Analytics ganha KPIs reais no topo (headcount ativo,
+ * conversão do funil de recrutamento, onboardings em andamento, tempo médio
+ * de contratação) calculados a partir dos mesmos dados já buscados nesta
+ * rota; os widgets de tendência histórica (turnover mensal, ranking de
+ * crescimento por departamento, satisfação, onboardings no prazo) continuam
+ * decorativos porque o schema atual não guarda série histórica de headcount,
+ * desligamentos ou pesquisas de satisfação — não há de onde tirar esse
+ * número sem inventar.
  */
 export const runtime = 'nodejs';
 
@@ -78,6 +92,28 @@ const SCHEDULE_STATUS_PILL: Record<string, { cls: string; label: string }> = {
   confirmed: { cls: 'ok', label: 'Confirmado' },
   completed: { cls: 'ok', label: 'Concluído' },
   absent: { cls: 'danger', label: 'Ausente' },
+};
+
+const DOCUMENT_CATEGORY: Record<string, { label: string; filterCat: string }> = {
+  identidade: { label: 'Identidade', filterCat: 'identidade' },
+  comprovante: { label: 'Comprovante', filterCat: 'comprovantes' },
+  contrato: { label: 'Contrato', filterCat: 'contratos' },
+  curriculo: { label: 'Currículo', filterCat: 'curriculo' },
+  outro: { label: 'Outro', filterCat: 'outro' },
+};
+
+const APPROVAL_STATUS_PILL: Record<string, { cls: string; label: string }> = {
+  pending: { cls: 'pending', label: 'Em análise' },
+  approved: { cls: 'ok', label: 'Aprovado' },
+  rejected: { cls: 'danger', label: 'Recusado' },
+};
+
+const OCR_STATUS_LABEL: Record<string, string> = {
+  pendente: 'Pendente',
+  processando: 'Processando',
+  concluido: 'Concluído',
+  falhou: 'Falhou',
+  baixa_confianca: 'Baixa confiança',
 };
 
 function formatDateTime(iso: string): string {
@@ -144,22 +180,33 @@ ${platformBody}
     { data: onboardings },
     { data: schedules },
     { data: auditLogs },
+    { data: orgProfiles },
+    { data: documents },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, job_title, department_id, status, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
     supabase.from('departments').select('id, name').eq('tenant_id', tenantId),
     supabase.from('job_openings').select('id, title, department_id, location, employment_type, status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(30),
-    supabase.from('candidates').select('id, full_name, job_opening_id, stage').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
+    supabase.from('candidates').select('id, full_name, job_opening_id, stage, created_at, updated_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
     supabase.from('onboardings').select('id, profile_id, status, start_date, profiles(full_name, job_title)').eq('tenant_id', tenantId).eq('status', 'em_andamento').limit(20),
     supabase.from('schedules').select('id, profile_id, shift_date, shift_type, start_time, end_time, status, profiles(full_name)').eq('tenant_id', tenantId).gte('shift_date', monthStart).lte('shift_date', monthEnd).order('shift_date', { ascending: true }).limit(200),
     supabase.from('audit_logs').select('id, actor_id, action, entity_type, ip_address, created_at, profiles(full_name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
+    // Colaboradores > Hierarquia da Empresa: precisa de manager_id/email/phone,
+    // que a query de "colaboradores" acima não busca (e é limitada a 50, mas
+    // aqui buscamos mais pra árvore ficar mais completa).
+    supabase.from('profiles').select('id, full_name, job_title, department_id, manager_id, email, phone').eq('tenant_id', tenantId).order('full_name', { ascending: true }).limit(300),
+    // Onboarding > Documentos: tabela real, já populada pelo webhook n8n
+    // (document_ocr_completed) em api/webhooks/n8n/route.ts.
+    supabase.from('documents').select('id, file_name, category, ocr_status, ocr_confidence, approval_status, created_at, profiles:profile_id(full_name), candidates:candidate_id(full_name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
   ]) as unknown as [
     { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; status: string; created_at: string }[] | null },
     { data: { id: string; name: string }[] | null },
     { data: { id: string; title: string; department_id: string | null; location: string | null; employment_type: string; status: string }[] | null },
-    { data: { id: string; full_name: string; job_opening_id: string | null; stage: string }[] | null },
+    { data: { id: string; full_name: string; job_opening_id: string | null; stage: string; created_at: string; updated_at: string }[] | null },
     { data: { id: string; profile_id: string; status: string; start_date: string; profiles: { full_name: string; job_title: string | null } | { full_name: string; job_title: string | null }[] | null }[] | null },
     { data: { id: string; profile_id: string; shift_date: string; shift_type: string; start_time: string | null; end_time: string | null; status: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
     { data: { id: string; actor_id: string | null; action: string; entity_type: string | null; ip_address: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
+    { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; manager_id: string | null; email: string; phone: string | null }[] | null },
+    { data: { id: string; file_name: string; category: string | null; ocr_status: string | null; ocr_confidence: number | null; approval_status: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null; candidates: { full_name: string } | { full_name: string }[] | null }[] | null },
   ];
 
   const deptMap = new Map((departments ?? []).map((d) => [d.id, d.name]));
@@ -367,6 +414,209 @@ ${platformBody}
     html = html.replace(
       /<div class="subview" id="colab-escalas">[\s\S]*?(?=<div class="subview" id="colab-organograma">)/,
       escalasSubview
+    );
+  }
+
+  // ---- Colaboradores > Hierarquia da Empresa (Organograma) ----
+  // Trocamos a árvore SVG-like com nomes fixos por uma árvore real construída
+  // a partir de profiles.manager_id (a coluna existe no schema — confirmado
+  // em supabase/migrations/0001_initial_schema.sql). Quem não tem manager_id
+  // (ou cujo gestor não veio na consulta) vira raiz da árvore — pode haver
+  // mais de uma raiz se o tenant não tiver um único "topo" cadastrado, o que
+  // é normal em dado real (ao contrário do protótipo fixo, que sempre tinha
+  // um CEO único). Os chips de filtro por departamento também passam a ser
+  // gerados a partir dos departamentos que realmente aparecem entre as
+  // pessoas buscadas, em vez dos 4 departamentos fixos do protótipo.
+  if (orgProfiles) {
+    type OrgProfile = { id: string; full_name: string; job_title: string | null; department_id: string | null; manager_id: string | null; email: string; phone: string | null };
+
+    const deptSlugFor = (deptId: string | null): string => {
+      return deptId ? `dept-${deptId}` : 'sem-departamento';
+    };
+    const deptLabelFor = (deptId: string | null): string => {
+      return deptId ? (deptMap.get(deptId) ?? 'Sem departamento') : 'Sem departamento';
+    };
+
+    const renderOrgNode = (p: OrgProfile, childrenOf: Map<string, OrgProfile[]>, visited: Set<string>): string => {
+      if (visited.has(p.id)) return ''; // proteção contra manager_id cíclico (dado malformado)
+      visited.add(p.id);
+      const kids = childrenOf.get(p.id) ?? [];
+      const kidsHtml = kids.length ? `<ul>${kids.map((k) => renderOrgNode(k, childrenOf, visited)).join('')}</ul>` : '';
+      const name = escapeHtml(p.full_name);
+      const role = escapeHtml(p.job_title ?? '—');
+      return `<li><div class="org-node" data-dept="${escapeHtml(deptSlugFor(p.department_id))}" data-dept-label="${escapeHtml(deptLabelFor(p.department_id))}" data-name="${name}" data-role="${role}" data-email="${escapeHtml(p.email)}" data-phone="${escapeHtml(p.phone ?? '—')}"><span class="org-avatar" style="background:linear-gradient(135deg,var(--blue),var(--blue-deep))">${escapeHtml(initials(p.full_name))}</span><div class="org-name">${name}</div><div class="org-role">${role}</div></div>${kidsHtml}</li>`;
+    };
+
+    let orgTreeHtml = `<p class="muted" style="padding:24px">Nenhum colaborador cadastrado ainda.</p>`;
+    let orgChipsHtml = `<span class="chip active" data-dept="todos">Todos</span>`;
+
+    if (orgProfiles.length > 0) {
+      const byId = new Map(orgProfiles.map((p) => [p.id, p]));
+      const childrenOf = new Map<string, OrgProfile[]>();
+      const roots: OrgProfile[] = [];
+      for (const p of orgProfiles) {
+        if (p.manager_id && byId.has(p.manager_id)) {
+          const list = childrenOf.get(p.manager_id) ?? [];
+          list.push(p);
+          childrenOf.set(p.manager_id, list);
+        } else {
+          roots.push(p);
+        }
+      }
+      const visited = new Set<string>();
+      orgTreeHtml = `<ul class="org-tree">${roots.map((r) => renderOrgNode(r, childrenOf, visited)).join('')}</ul>`;
+
+      const seenDepts = new Map<string, string>();
+      for (const p of orgProfiles) {
+        seenDepts.set(deptSlugFor(p.department_id), deptLabelFor(p.department_id));
+      }
+      orgChipsHtml += Array.from(seenDepts.entries())
+        .map(([slug, label]) => `<span class="chip" data-dept="${escapeHtml(slug)}">${escapeHtml(label)}</span>`)
+        .join('');
+    }
+
+    const orgSubview = `<div class="subview" id="colab-organograma">
+<div class="org-toolbar">
+<input id="orgSearch" placeholder="Buscar por nome..." aria-label="Buscar pessoa no organograma">
+<div class="chip-group" id="orgDeptFilter">${orgChipsHtml}</div>
+<div class="org-zoom-controls">
+<button id="orgZoomOut" type="button" aria-label="Diminuir zoom">−</button>
+<button id="orgZoomReset" type="button" aria-label="Restaurar zoom">100%</button>
+<button id="orgZoomIn" type="button" aria-label="Aumentar zoom">+</button>
+</div>
+</div>
+<p class="muted" style="font-size:.78rem;margin-bottom:14px">Arraste para navegar · role o scroll para aplicar zoom · clique em uma pessoa para ver o perfil.</p>
+<div class="org-viewport" id="orgViewport">
+<div class="org-canvas" id="orgCanvas">
+${orgTreeHtml}
+</div>
+</div>
+</div>
+      </div>
+    </section>`;
+
+    html = html.replace(
+      /<div class="subview" id="colab-organograma">[\s\S]*?<\/section>/,
+      orgSubview
+    );
+  }
+
+  // ---- Onboarding > Documentos ----
+  // A subview era 100% estática (tabela de documentos + "logs de IA/OCR" com
+  // um comentário no próprio HTML avisando que era simulação). A tabela
+  // `documents` já existe e já é populada de verdade pelo webhook n8n
+  // (evento document_ocr_completed, em src/app/api/webhooks/n8n/route.ts),
+  // então trocamos a tabela por dado real. Removemos o painel de "logs de
+  // processamento IA/OCR" — não existe uma tabela de eventos/log por
+  // documento no schema, só o snapshot final em ocr_status/ocr_confidence/
+  // ocr_extracted, que agora aparece como uma linha auxiliar sob o status.
+  if (documents) {
+    const rows = documents.length === 0
+      ? `<tr data-cat="todos"><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">Nenhum documento enviado ainda.</td></tr>`
+      : documents.map((d) => {
+          const person = Array.isArray(d.profiles) ? d.profiles[0] : d.profiles;
+          const candidate = Array.isArray(d.candidates) ? d.candidates[0] : d.candidates;
+          const personName = person?.full_name ?? candidate?.full_name ?? '—';
+          const cat = d.category ? (DOCUMENT_CATEGORY[d.category] ?? { label: d.category, filterCat: d.category }) : { label: '—', filterCat: 'outro' };
+          const pill = APPROVAL_STATUS_PILL[d.approval_status ?? 'pending'] ?? APPROVAL_STATUS_PILL.pending;
+          const ocrLabel = d.ocr_status ? (OCR_STATUS_LABEL[d.ocr_status] ?? d.ocr_status) : null;
+          const ocrSub = ocrLabel
+            ? `<div class="sub" style="margin-top:4px">OCR: ${escapeHtml(ocrLabel)}${d.ocr_confidence != null ? ' · ' + d.ocr_confidence + '%' : ''}</div>`
+            : '';
+          return `<tr data-cat="${escapeHtml(cat.filterCat)}"><td>${escapeHtml(d.file_name)}</td><td><span class="tag">${escapeHtml(cat.label)}</span></td><td>${escapeHtml(personName)}</td><td>${formatDate(d.created_at)}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span>${ocrSub}</td></tr>`;
+        }).join('');
+
+    const documentosSubview = `<div class="subview" id="onb-documentos">
+<div class="dropzone glass">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+<div class="t">Arraste documentos aqui ou envie pelo celular</div>
+<div class="d">PDF, JPG ou PNG · até 10MB por arquivo</div>
+<div class="capture-actions">
+<button class="btn btn-primary btn-sm" id="btnOpenCamera" type="button">📷 Fotografar documento</button>
+<button class="btn btn-ghost btn-sm" id="btnOpenGallery" type="button">🖼️ Enviar da galeria</button>
+</div>
+<input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
+<input type="file" accept="image/*" id="galleryInput" style="display:none">
+</div>
+<div class="table-toolbar">
+<input id="docsSearch" placeholder="Buscar documento ou colaborador..." aria-label="Buscar documentos">
+<div class="chip-group" id="docsCatFilter">
+<span class="chip active" data-cat="todos">Todos</span>
+<span class="chip" data-cat="identidade">Identidade</span>
+<span class="chip" data-cat="comprovantes">Comprovantes</span>
+<span class="chip" data-cat="contratos">Contratos</span>
+</div>
+</div>
+<div class="table-wrap glass">
+<table class="data-table" id="docsTable">
+<thead><tr><th>Documento</th><th>Categoria</th><th>Colaborador</th><th>Enviado em</th><th>Status</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</div>
+</div>
+`;
+
+    html = html.replace(
+      /<div class="subview" id="onb-documentos">[\s\S]*?(?=<div class="subview" id="onb-treinamentos">)/,
+      documentosSubview
+    );
+  }
+
+  // ---- Analytics: KPIs principais ----
+  // Substituímos os 4 cards do topo por números reais, calculados a partir
+  // dos MESMOS dados já buscados acima (colaboradores, candidates,
+  // onboardings) — por isso ficam sujeitos aos mesmos limites de paginação
+  // já usados no resto da rota (ex: colaboradores é limitado a 50), assim
+  // como as demais seções deste dashboard. Os widgets abaixo dos KPIs
+  // (turnover mensal, ranking de crescimento por departamento, satisfação,
+  // onboardings no prazo) continuam decorativos: o schema atual não guarda
+  // série histórica de headcount, desligamentos (não existe tabela de
+  // "terminations"/afastamentos com data) nem pesquisa de satisfação — sem
+  // esse dado não dá pra calcular tendência real, só inventar número, o que
+  // a tarefa pediu explicitamente pra não fazer.
+  if (colaboradores && candidates && onboardings) {
+    const activeHeadcount = colaboradores.filter((c) => c.status === 'active').length;
+
+    const totalCandidatos = candidates.length;
+    const aprovados = candidates.filter((c) => c.stage === 'aprovado').length;
+    const conversao = totalCandidatos > 0 ? (aprovados / totalCandidatos) * 100 : null;
+
+    const onboardingsAtivos = onboardings.length;
+
+    const hiringDurations = candidates
+      .filter((c) => c.stage === 'aprovado')
+      .map((c) => (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000)
+      .filter((days) => Number.isFinite(days) && days >= 0);
+    const avgHiringDays = hiringDurations.length > 0
+      ? Math.round(hiringDurations.reduce((a, b) => a + b, 0) / hiringDurations.length)
+      : null;
+
+    const kpiGrid = `<div class="kpi-grid" id="analyticsKpiGrid">
+<div class="kpi-card glass accent-blue">
+<div class="kpi-top"><span class="kpi-label">Colaboradores ativos</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M11 19V4M18 19v-7" stroke-linecap="round"/></svg></div></div>
+<div class="kpi-value">${activeHeadcount}</div>
+<div class="kpi-bottom"><span class="muted" style="font-size:.78rem">Total no tenant</span></div>
+</div>
+<div class="kpi-card glass accent-gold">
+<div class="kpi-top"><span class="kpi-label">Conversão do funil de recrutamento</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+<div class="kpi-value">${conversao != null ? conversao.toFixed(1).replace('.', ',') + '%' : '—'}</div>
+<div class="kpi-bottom"><span class="muted" style="font-size:.78rem">${conversao != null ? `${aprovados} de ${totalCandidatos} candidatos aprovados` : 'Sem candidaturas ainda'}</span></div>
+</div>
+<div class="kpi-card glass accent-blue">
+<div class="kpi-top"><span class="kpi-label">Tempo médio de contratação</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg></div></div>
+<div class="kpi-value">${avgHiringDays != null ? avgHiringDays + ' dias' : '—'}</div>
+<div class="kpi-bottom"><span class="muted" style="font-size:.78rem">${avgHiringDays != null ? 'Da candidatura até aprovação' : 'Sem contratações concluídas ainda'}</span></div>
+</div>
+<div class="kpi-card glass accent-warn">
+<div class="kpi-top"><span class="kpi-label">Onboardings em andamento</span><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/><circle cx="12" cy="12" r="9"/></svg></div></div>
+<div class="kpi-value">${onboardingsAtivos}</div>
+<div class="kpi-bottom"><span class="muted" style="font-size:.78rem">Colaboradores em integração agora</span></div>
+</div>
+</div>`;
+
+    html = html.replace(
+      /<div class="kpi-grid" id="analyticsKpiGrid">[\s\S]*?(?=<div class="dash-row">)/,
+      `${kpiGrid}\n\n      `
     );
   }
 
