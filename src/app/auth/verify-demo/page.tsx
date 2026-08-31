@@ -5,11 +5,11 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 /**
  * Cópia de demonstração de /auth/verify SEM chamada real ao Supabase —
  * existe só pra dar pra assistir a animação inteira (digitação, fusão,
- * "Verificando/Processando/Autorizando", sucesso verde) sem precisar de
- * login nem de código real. Mesmo JSX/CSS da página de verdade, timings
- * idênticos; a única troca é verifyCode() virar um mock que sempre
- * resolve "ok" depois de um delay simulado. Roda automaticamente ao
- * abrir e tem um botão "Repetir".
+ * badge com anel "correndo", sucesso verde) sem precisar de login nem de
+ * código real. Mesmo JSX/CSS da página de verdade, timings idênticos; a
+ * única troca é o resultado da verificação virar um mock que sempre dá
+ * "ok" depois de um delay curto. Roda automaticamente ao abrir e tem um
+ * botão "Repetir".
  */
 export default function VerifyDemoPage() {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
@@ -30,6 +30,7 @@ export default function VerifyDemoPage() {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const digitsRef = useRef(digits);
   digitsRef.current = digits;
+  const frozenRef = useRef(false);
 
   const allFilled = digits.every((d) => d.length === 1);
 
@@ -41,25 +42,21 @@ export default function VerifyDemoPage() {
     setErrorMsg('');
 
     setMerging(true);
-
+    setTimeout(() => setMerged(true), 400);
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
-    }, 900);
+    }, 420);
 
-    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 1700);
-    setTimeout(() => setStatusText('Autorizando acesso...'), 2500);
-    setTimeout(() => setMerged(true), 1300);
-
+    // Mock: sem rede, delay curto simulando a resposta real (igual ao
+    // vídeo de referência, onde a fusão inteira até "verificado" leva
+    // menos de 1s no total).
     setTimeout(() => {
-      // Mock: sem rede, sempre "ok" — só pra ver a animação de sucesso.
       setStatusText('Identidade verificada com sucesso.');
-      setTimeout(() => {
-        setSuccess(true);
-        setSuccessGlow(true);
-        setTimeout(() => setLeaving(true), 1400);
-      }, 300);
-    }, 3200);
+      setSuccess(true);
+      setSuccessGlow(true);
+      setTimeout(() => setLeaving(true), 900);
+    }, 900);
   }, [verifying]);
 
   function resetAndPlay() {
@@ -98,11 +95,30 @@ export default function VerifyDemoPage() {
   }
 
   useEffect(() => {
+    // ?freeze=merged|success trava num estado fixo (sem os timers da
+    // sequência real) só pra dar pra inspecionar/printar sem correr
+    // contra o relógio. Sem o parâmetro, roda a sequência normal.
+    const freeze = new URLSearchParams(window.location.search).get('freeze');
+    if (freeze === 'merged' || freeze === 'success') {
+      frozenRef.current = true;
+      setDigits(['4', '8', '2', '1', '9', '5']);
+      setDisabled(true);
+      setMerging(true);
+      setMerged(true);
+      setStatusShow(true);
+      if (freeze === 'success') {
+        setStatusText('Identidade verificada com sucesso.');
+        setSuccess(true);
+        setSuccessGlow(true);
+      }
+      return;
+    }
     resetAndPlay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    if (frozenRef.current) return;
     if (allFilled && !verifying && !success) {
       const t = setTimeout(() => beginVerification(), 150);
       return () => clearTimeout(t);
@@ -143,7 +159,9 @@ export default function VerifyDemoPage() {
                   ))}
                 </div>
                 <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
-                  <span className="spinner" aria-hidden="true" />
+                  <svg className="merge-ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                    <rect x="1.5" y="1.5" width="97" height="37" rx="10" ry="10" pathLength={100} />
+                  </svg>
                   <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
                 </div>
               </div>

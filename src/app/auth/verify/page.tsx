@@ -89,24 +89,20 @@ export default function VerifyPage() {
 
     setMerging(true);
 
+    // No vídeo de referência a fusão inteira até "verificado" leva menos de
+    // 1s no total — nada de texto de progresso fake ("Verificando...
+    // Processando... Autorizando...") esperando por tempo fixo. As caixas
+    // convergem em .4s (CSS) e a chamada real ao Supabase já começa em
+    // paralelo — o spinner do badge é o único indicador de espera, e só
+    // aparece texto extra se a rede realmente estiver lenta.
+    setTimeout(() => setMerged(true), 400);
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
-    }, 900);
+    }, 420);
 
-    setTimeout(() => setStatusText('Processando com Fortixx AI...'), 1700);
-    setTimeout(() => setStatusText('Autorizando acesso...'), 2500);
-    // As caixas levam 1s pra convergir (CSS). Só trocamos pelo badge 300ms
-    // DEPOIS disso — folga de propósito, senão a fileira sumia enquanto
-    // ainda estava visivelmente em movimento e parecia um corte brusco.
-    setTimeout(() => setMerged(true), 1300);
-
-    setTimeout(async () => {
+    (async () => {
       const code = digits.join('');
-      // A verificação depende de 2 chamadas de rede pro Supabase (challenge +
-      // verify) e pode demorar alguns segundos dependendo da rede — sem esse
-      // aviso, depois de "Autorizando acesso..." a tela fica com texto parado
-      // por vários segundos e passa a impressão de estar travada.
       const slowNotice = setTimeout(() => {
         setStatusText('Ainda verificando... a conexão está mais lenta que o normal.');
       }, 4000);
@@ -132,17 +128,13 @@ export default function VerifyPage() {
       }
 
       setStatusText('Identidade verificada com sucesso.');
+      setSuccess(true);
+      setSuccessGlow(true);
       setTimeout(() => {
-        setSuccess(true);
-        setSuccessGlow(true);
-        // Dá tempo real de ver o badge verde antes de sair da tela — antes
-        // eram só 700ms, passava rápido demais pra perceber a confirmação.
-        setTimeout(() => {
-          setLeaving(true);
-          setTimeout(() => router.push('/dashboard'), 500);
-        }, 1400);
-      }, 300);
-    }, 3200);
+        setLeaving(true);
+        setTimeout(() => router.push('/dashboard'), 500);
+      }, 900);
+    })();
   }, [digits, allFilled, verifying, verifyCode, router]);
 
   useEffect(() => {
@@ -235,7 +227,9 @@ export default function VerifyPage() {
                 ))}
               </div>
               <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
-                <span className="spinner" aria-hidden="true" />
+                <svg className="merge-ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                  <rect x="1.5" y="1.5" width="97" height="37" rx="10" ry="10" pathLength={100} />
+                </svg>
                 <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
               </div>
             </div>
