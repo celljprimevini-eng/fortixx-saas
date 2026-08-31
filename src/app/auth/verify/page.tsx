@@ -24,8 +24,6 @@ export default function VerifyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
   const [merging, setMerging] = useState(false);
-  const [lineRun, setLineRun] = useState(false);
-  const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
   const [statusText, setStatusText] = useState('Verificando identidade...');
   const [verifying, setVerifying] = useState(false);
@@ -89,8 +87,6 @@ export default function VerifyPage() {
     setErrorMsg('');
 
     setMerging(true);
-    setLineRun(true);
-    setTimeout(() => setScanRun(true), 50);
 
     setTimeout(() => {
       setStatusShow(true);
@@ -221,8 +217,6 @@ export default function VerifyPage() {
                     />
                   ))}
                 </div>
-                <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
-                <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
               </div>
 
               <p className="error-text">{errorMsg}</p>
