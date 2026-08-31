@@ -196,11 +196,45 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .code-scan-sweep.run { animation: scanSweep .9s ease-in-out .45s forwards; }
 @keyframes scanSweep { 0% { left: -38px; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
 
-/* merge into a single component during verification */
-.code-zone.merging .code-row { gap: 0; }
-.code-zone.merging .code-input { border-radius: 0; margin-left: -1px; transition: border-radius .35s var(--ease), margin .35s var(--ease); }
-.code-zone.merging .code-input:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); margin-left: 0; }
-.code-zone.merging .code-input:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+/* Fusão de verdade (igual ao vídeo de referência): as 6 caixas deslizam pro
+   centro e se sobrepõem, virando UM quadrado só — não uma barra esticada.
+   Cada caixa translada em direção ao ponto médio entre a 3ª e a 4ª. */
+.code-zone.merging .code-input { transition: transform .45s var(--ease), opacity .3s var(--ease) .25s; }
+.code-zone.merging .code-input:nth-child(1) { transform: translateX(137px); z-index: 1; }
+.code-zone.merging .code-input:nth-child(2) { transform: translateX(82px); z-index: 2; }
+.code-zone.merging .code-input:nth-child(3) { transform: translateX(27px); z-index: 3; }
+.code-zone.merging .code-input:nth-child(4) { transform: translateX(-27px); z-index: 4; }
+.code-zone.merging .code-input:nth-child(5) { transform: translateX(-82px); z-index: 5; }
+.code-zone.merging .code-input:nth-child(6) { transform: translateX(-137px); z-index: 6; }
+.code-zone.merged .code-row,
+.code-zone.merged .code-connect-line,
+.code-zone.merged .code-scan-sweep {
+  /* !important necessário: code-connect-line.run e code-scan-sweep.run têm
+     animation com fill-mode forwards, cujo valor final de opacity vence
+     uma declaração normal (mesmo mais específica) sem !important. */
+  opacity: 0 !important; pointer-events: none; transition: opacity .2s var(--ease);
+}
+
+/* O "badge" que fica no lugar das caixas depois que elas se juntam —
+   começa vermelho com um indicador girando (igual ao vídeo), vira verde
+   com o check quando confirma. Fica no MESMO lugar/quadro do código,
+   não troca pra uma tela separada. */
+.merge-badge {
+  position: absolute; top: 50%; left: 50%; width: 46px; height: 56px;
+  transform: translate(-50%, -50%) scale(.6); border-radius: var(--radius-sm);
+  background: rgba(248,113,113,.14); border: 1.5px solid rgba(248,113,113,.55);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s var(--ease), transform .3s var(--ease), background .4s var(--ease), border-color .4s var(--ease);
+}
+.merge-badge.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.merge-badge.success { background: rgba(52,211,153,.14); border-color: rgba(52,211,153,.6); box-shadow: 0 0 24px rgba(52,211,153,.4); }
+.merge-badge svg { width: 20px; height: 20px; }
+.merge-badge .spinner { width: 16px; height: 16px; border: 2px solid rgba(248,113,113,.3); border-top-color: var(--red); }
+.merge-badge.success .spinner { display: none; }
+.merge-badge .check-icon { display: none; color: var(--green); }
+.merge-badge.success .check-icon { display: block; animation: checkPop .35s var(--ease); }
+@keyframes checkPop { 0% { transform: scale(.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 /* Existia aqui um anel de "LED chase" (borda giratória) ao redor dos dígitos
    durante a verificação, feito com um conic-gradient quase todo transparente
    (só ~24% colorido) tentando virar um anel fino via mask-composite: exclude.

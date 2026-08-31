@@ -24,6 +24,7 @@ export default function VerifyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [merged, setMerged] = useState(false);
   const [lineRun, setLineRun] = useState(false);
   const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
@@ -99,6 +100,10 @@ export default function VerifyPage() {
 
     setTimeout(() => setStatusText('Processando com Fortixx AI...'), 900);
     setTimeout(() => setStatusText('Autorizando acesso...'), 1300);
+    // Depois que as 6 caixas terminam de deslizar pro centro (transição de
+    // .45s no CSS), escondemos a fileira e mostramos o badge único no lugar
+    // — é o "quadrado só" que o usuário pediu, no mesmo espaço do código.
+    setTimeout(() => setMerged(true), 480);
 
     setTimeout(async () => {
       const code = digits.join('');
@@ -115,8 +120,9 @@ export default function VerifyPage() {
       if (!result.ok) {
         setVerifying(false);
         setStatusShow(false);
-        setShake(true);
+        setMerged(false);
         setMerging(false);
+        setShake(true);
         setErrorState(true);
         setErrorMsg(result.message);
         setTimeout(() => setShake(false), 520);
@@ -197,67 +203,71 @@ export default function VerifyPage() {
       <div className="login-card-wrap">
         <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
 
-          {!success && (
-            <div className="login-step active" id="step2fa">
-              <span className="login-eyebrow">Verificação em duas etapas</span>
-              <h1 className="login-title">Confirme seu acesso</h1>
-              <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
+          {/*
+            Fica tudo no MESMO card/quadro o tempo todo — as 6 caixas, o
+            badge de fusão e a mensagem de sucesso nunca trocam pra uma
+            seção separada. Só o título/subtítulo e o conteúdo do badge
+            mudam conforme o estado (igual ao vídeo de referência).
+          */}
+          <div className="login-step active" id="step2fa">
+            <span className="login-eyebrow">Verificação em duas etapas</span>
+            <h1 className="login-title">{success ? 'Identidade verificada com sucesso.' : 'Confirme seu acesso'}</h1>
+            <p className="login-sub">
+              {success
+                ? 'Preparando seu painel...'
+                : 'Digite o código de 6 dígitos do seu aplicativo autenticador.'}
+            </p>
 
-              <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''}`} id="codeZone">
-                <div className="code-row" id="codeRow">
-                  {digits.map((digit, i) => (
-                    <input
-                      key={i}
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
-                      inputMode="numeric"
-                      maxLength={1}
-                      aria-label={`Dígito ${i + 1}`}
-                      value={digit}
-                      disabled={disabled}
-                      onChange={(e) => handleChange(i, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(i, e)}
-                      onPaste={handlePaste}
-                    />
-                  ))}
-                </div>
-                <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
-                <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
+            <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''} ${merged ? 'merged' : ''}`} id="codeZone">
+              <div className="code-row" id="codeRow">
+                {digits.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                    inputMode="numeric"
+                    maxLength={1}
+                    aria-label={`Dígito ${i + 1}`}
+                    value={digit}
+                    disabled={disabled}
+                    onChange={(e) => handleChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(i, e)}
+                    onPaste={handlePaste}
+                  />
+                ))}
               </div>
+              <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
+              <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
+              <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
+                <span className="spinner" aria-hidden="true" />
+                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
+              </div>
+            </div>
 
-              <p className="error-text">{errorMsg}</p>
+            {!success && <p className="error-text">{errorMsg}</p>}
 
+            {!success && (
               <div className={`verify-status-wrap ${statusShow ? 'show' : ''}`}>
                 <div className="ai-pulse-icon" aria-hidden="true"><span /><span /><span /></div>
                 <p className="verify-status-text">{statusText}</p>
               </div>
+            )}
 
+            {!success && (
               <button className="btn btn-primary" disabled={!allFilled || verifying} onClick={beginVerification}>
                 Verificar
               </button>
+            )}
 
+            {!success && (
               <div className="resend-row">
                 Não recebeu?{' '}
                 <button className={`link-accent ${resendSeconds === 0 ? 'activated' : ''}`} disabled={resendSeconds > 0} onClick={handleResend}>
                   {resendSeconds > 0 ? `Reenviar código (${resendSeconds}s)` : 'Reenviar código'}
                 </button>
               </div>
-            </div>
-          )}
-
-          {success && (
-            <div className="login-step active" id="stepSuccess">
-              <div className="success-wrap">
-                <div className="success-icon gold pulse">
-                  <div className="success-icon-ring" />
-                  <div className="success-icon-ring-outer" />
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
-                </div>
-                <h1 className="login-title">Identidade verificada com sucesso.</h1>
-                <p className="login-sub"><span className="spinner" aria-hidden="true" />&nbsp; Preparando seu painel...</p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
       </div>
