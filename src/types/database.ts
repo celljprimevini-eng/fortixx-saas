@@ -247,6 +247,85 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['audit_logs']['Row']>;
         Relationships: [];
       };
+      interviews: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          candidate_id: string;
+          job_opening_id: string | null;
+          interviewer_id: string | null;
+          scheduled_at: string;
+          status: 'agendada' | 'realizada' | 'cancelada' | 'reagendada';
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['interviews']['Row']> & { tenant_id: string; candidate_id: string; scheduled_at: string };
+        Update: Partial<Database['public']['Tables']['interviews']['Row']>;
+        Relationships: [
+          {
+            foreignKeyName: 'interviews_candidate_id_fkey';
+            columns: ['candidate_id'];
+            isOneToOne: false;
+            referencedRelation: 'candidates';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'interviews_job_opening_id_fkey';
+            columns: ['job_opening_id'];
+            isOneToOne: false;
+            referencedRelation: 'job_openings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'interviews_interviewer_id_fkey';
+            columns: ['interviewer_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      trainings: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          title: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['trainings']['Row']> & { tenant_id: string; title: string };
+        Update: Partial<Database['public']['Tables']['trainings']['Row']>;
+        Relationships: [];
+      };
+      training_progress: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          training_id: string;
+          profile_id: string;
+          progress_pct: number;
+          completed_at: string | null;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['training_progress']['Row']> & { tenant_id: string; training_id: string; profile_id: string };
+        Update: Partial<Database['public']['Tables']['training_progress']['Row']>;
+        Relationships: [
+          {
+            foreignKeyName: 'training_progress_training_id_fkey';
+            columns: ['training_id'];
+            isOneToOne: false;
+            referencedRelation: 'trainings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'training_progress_profile_id_fkey';
+            columns: ['profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -108,6 +108,13 @@ const APPROVAL_STATUS_PILL: Record<string, { cls: string; label: string }> = {
   rejected: { cls: 'danger', label: 'Recusado' },
 };
 
+const INTERVIEW_STATUS_PILL: Record<string, { cls: string; label: string }> = {
+  agendada: { cls: 'info', label: 'Agendada' },
+  realizada: { cls: 'ok', label: 'Realizada' },
+  cancelada: { cls: 'danger', label: 'Cancelada' },
+  reagendada: { cls: 'pending', label: 'Reagendada' },
+};
+
 const OCR_STATUS_LABEL: Record<string, string> = {
   pendente: 'Pendente',
   processando: 'Processando',
@@ -182,6 +189,9 @@ ${platformBody}
     { data: auditLogs },
     { data: orgProfiles },
     { data: documents },
+    { data: interviews },
+    { data: trainings },
+    { data: trainingProgress },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, job_title, department_id, status, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
     supabase.from('departments').select('id, name').eq('tenant_id', tenantId),
@@ -197,6 +207,11 @@ ${platformBody}
     // Onboarding > Documentos: tabela real, já populada pelo webhook n8n
     // (document_ocr_completed) em api/webhooks/n8n/route.ts.
     supabase.from('documents').select('id, file_name, category, ocr_status, ocr_confidence, approval_status, created_at, profiles:profile_id(full_name), candidates:candidate_id(full_name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
+    // Recrutamento > Entrevistas: tabela real (supabase/migrations/0009_interviews.sql).
+    supabase.from('interviews').select('id, scheduled_at, status, notes, candidates(full_name), job_openings(title), profiles:interviewer_id(full_name)').eq('tenant_id', tenantId).order('scheduled_at', { ascending: true }).limit(100),
+    // Onboarding > Treinamentos: catálogo real (supabase/migrations/0010_trainings.sql).
+    supabase.from('trainings').select('id, title, description, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('training_progress').select('training_id, profile_id, progress_pct').eq('tenant_id', tenantId),
   ]) as unknown as [
     { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; status: string; created_at: string }[] | null },
     { data: { id: string; name: string }[] | null },
@@ -207,6 +222,9 @@ ${platformBody}
     { data: { id: string; actor_id: string | null; action: string; entity_type: string | null; ip_address: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
     { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; manager_id: string | null; email: string; phone: string | null }[] | null },
     { data: { id: string; file_name: string; category: string | null; ocr_status: string | null; ocr_confidence: number | null; approval_status: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null; candidates: { full_name: string } | { full_name: string }[] | null }[] | null },
+    { data: { id: string; scheduled_at: string; status: string; notes: string | null; candidates: { full_name: string } | { full_name: string }[] | null; job_openings: { title: string } | { title: string }[] | null; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
+    { data: { id: string; title: string; description: string | null; created_at: string }[] | null },
+    { data: { training_id: string; profile_id: string; progress_pct: number }[] | null },
   ];
 
   const deptMap = new Map((departments ?? []).map((d) => [d.id, d.name]));
@@ -281,6 +299,47 @@ ${platformBody}
     html = html.replace(
       /<div class="subview" id="recrut-aprovacoes">[\s\S]*?(?=<div class="subview" id="recrut-dashboard">)/,
       `<div class="subview" id="recrut-aprovacoes">${items}</div>\n`
+    );
+  }
+
+  // ---- Recrutamento > Entrevistas ----
+  // Era tabela 100% estática. Agora lê a tabela `interviews` real (0009).
+  // O botão "+ Agendar entrevista" segue o mesmo padrão simples de prompt()
+  // usado em Configurações > Usuários ("+ Convidar usuário") — os dados de
+  // candidatos/entrevistadores do tenant ficam num bloco data-* escondido
+  // pro script.ts resolver nome -> id sem precisar de outro fetch.
+  if (interviews) {
+    const rows = interviews.length === 0
+      ? `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">Nenhuma entrevista agendada ainda.</td></tr>`
+      : interviews.map((i) => {
+          const candidate = Array.isArray(i.candidates) ? i.candidates[0] : i.candidates;
+          const job = Array.isArray(i.job_openings) ? i.job_openings[0] : i.job_openings;
+          const interviewer = Array.isArray(i.profiles) ? i.profiles[0] : i.profiles;
+          const pill = INTERVIEW_STATUS_PILL[i.status] ?? INTERVIEW_STATUS_PILL.agendada;
+          return `<tr><td>${escapeHtml(candidate?.full_name ?? '—')}</td><td>${escapeHtml(job?.title ?? '—')}</td><td>${formatDateTime(i.scheduled_at)}</td><td>${escapeHtml(interviewer?.full_name ?? '—')}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td></tr>`;
+        }).join('');
+
+    const candidatesMeta = escapeHtml(JSON.stringify((candidates ?? []).map((c) => ({ id: c.id, full_name: c.full_name }))));
+    const interviewersMeta = escapeHtml(JSON.stringify((colaboradores ?? []).map((c) => ({ id: c.id, full_name: c.full_name }))));
+
+    const entrevistasSubview = `<div class="subview" id="recrut-entrevistas">
+<div class="table-toolbar" style="justify-content:space-between">
+<div class="chip-group"><span class="chip active">Entrevistas agendadas</span></div>
+<button class="btn btn-primary btn-sm" id="btnScheduleInterview">+ Agendar entrevista</button>
+</div>
+<div class="table-wrap glass">
+<table class="data-table">
+<thead><tr><th>Candidato</th><th>Vaga</th><th>Data/Hora</th><th>Entrevistador</th><th>Status</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</div>
+<div id="interviewSchedulerMeta" data-candidates="${candidatesMeta}" data-interviewers="${interviewersMeta}" style="display:none"></div>
+</div>
+`;
+
+    html = html.replace(
+      /<div class="subview" id="recrut-entrevistas">[\s\S]*?(?=<div class="subview" id="recrut-aprovacoes">)/,
+      entrevistasSubview
     );
   }
 
@@ -559,6 +618,33 @@ ${orgTreeHtml}
     html = html.replace(
       /<div class="subview" id="onb-documentos">[\s\S]*?(?=<div class="subview" id="onb-treinamentos">)/,
       documentosSubview
+    );
+  }
+
+  // ---- Onboarding > Treinamentos ----
+  // Era 3 cards de progresso fixos. Agora lê `trainings` (catálogo) +
+  // `training_progress` (0010_trainings.sql) e mostra quantos colaboradores
+  // completaram cada treinamento. Criar treinamento não faz parte desta
+  // passada — só leitura + o endpoint de progresso (api/trainings/progress).
+  if (trainings) {
+    let treinamentosBody: string;
+    if (trainings.length === 0) {
+      treinamentosBody = `<p class="muted" style="padding:24px">Nenhum treinamento cadastrado — crie um pra começar.</p>`;
+    } else {
+      const cards = trainings.map((t) => {
+        const rows = (trainingProgress ?? []).filter((p) => p.training_id === t.id);
+        const total = rows.length;
+        const completos = rows.filter((p) => p.progress_pct >= 100).length;
+        const pct = total > 0 ? Math.round(rows.reduce((sum, p) => sum + p.progress_pct, 0) / total) : 0;
+        const sub = total > 0 ? `${completos} de ${total} colaboradores completaram` : 'Nenhum colaborador iniciou ainda';
+        return `<div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:12px">${escapeHtml(t.title)}</h3><div class="progress-row"><span>${escapeHtml(sub)}</span><span>${pct}%</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
+      }).join('');
+      treinamentosBody = `<div class="dash-row thirds">${cards}</div>`;
+    }
+
+    html = html.replace(
+      /<div class="subview" id="onb-treinamentos">[\s\S]*?(?=<div class="subview" id="onb-status">)/,
+      `<div class="subview" id="onb-treinamentos">${treinamentosBody}</div>\n`
     );
   }
 

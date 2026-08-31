@@ -54,6 +54,34 @@ export const applicationSchema = z.object({
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Recrutamento > Entrevistas
+// ────────────────────────────────────────────────────────────────────────────
+
+export const interviewCreateSchema = z.object({
+  candidate_id: z.string().uuid(),
+  job_opening_id: z.string().uuid().nullable().optional(),
+  interviewer_id: z.string().uuid().nullable().optional(),
+  scheduled_at: z.string().datetime({ offset: true }).or(z.string().min(1)),
+  notes: z.string().max(2000).trim().optional().or(z.literal('')),
+});
+
+export const interviewUpdateSchema = z.object({
+  status: z.enum(['agendada', 'realizada', 'cancelada', 'reagendada']).optional(),
+  notes: z.string().max(2000).trim().optional().or(z.literal('')),
+}).refine((v) => v.status !== undefined || v.notes !== undefined, {
+  message: 'Nada para atualizar.',
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Onboarding > Treinamentos
+// ────────────────────────────────────────────────────────────────────────────
+
+export const trainingProgressSchema = z.object({
+  training_id: z.string().uuid(),
+  progress_pct: z.number().int().min(0).max(100),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Stripe
 // ────────────────────────────────────────────────────────────────────────────
 
