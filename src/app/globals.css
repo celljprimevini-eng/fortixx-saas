@@ -122,7 +122,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    ao vídeo de referência — NÃO é um traço de borda se desenhando, é só
    a cor da borda mudando em .18s quando o campo fica ativo/preenchido). */
 .code-cell { position: relative; width: 46px; height: 56px; }
-.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .18s ease, box-shadow .18s ease, transform .15s; }
+.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .18s ease, box-shadow .18s ease, transform .15s; outline: none; }
 .code-cell.active .code-input { border-color: var(--red); box-shadow: 0 0 0 1px rgba(248,113,113,.12), 0 0 16px rgba(248,113,113,.08); }
 .code-cell.filled .code-input { border-color: rgba(239,96,74,.75); box-shadow: 0 0 0 1px rgba(239,96,74,.1); }
 .code-cell.error-state .code-input { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.16); }
@@ -179,6 +179,40 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 =================================================================== */
 .btn-primary, .btn-ghost { will-change: transform; }
 .btn-primary:hover, .btn-ghost:hover { box-shadow: 0 10px 26px rgba(37,99,235,.3); }
+
+/* ===================================================================
+   /auth/verify — ajuste pixel-perfect com o vídeo de referência, escopado
+   sob .verify-2fa pra não afetar login/register/setup-2fa (que também
+   usam .login-card/.code-input). Card escuro chapado (não o glass do
+   resto do site), handle no topo, inputs no tamanho/raio do vídeo.
+=================================================================== */
+.login-card.verify-2fa {
+  background: linear-gradient(180deg, #111012 0%, #100f11 100%) !important;
+  animation: none !important; border-radius: 32px;
+}
+.login-card.verify-2fa.success-glow {
+  background:
+    radial-gradient(circle at 50% 57%, rgba(0,255,130,.14) 0%, rgba(0,255,130,.075) 28%, rgba(0,255,130,.025) 52%, rgba(0,0,0,0) 75%),
+    linear-gradient(180deg, #111012 0%, #100f11 100%) !important;
+}
+.verify-2fa-handle { position: absolute; top: 14px; left: 50%; width: 44px; height: 4px; transform: translateX(-50%); border-radius: 100px; background: #4a484c; z-index: 2; }
+.verify-2fa .code-row { gap: 10px; margin-top: 40px; }
+.verify-2fa .code-cell { width: 44px; height: 56px; }
+.verify-2fa .code-input { border-radius: 15px; border-width: 2px; font-size: 1.3rem; }
+
+/* Traço de borda desenhando ao preencher (confirmado nos frames do
+   vídeo): <rect> com pathLength=100, stroke-dashoffset 100->0. */
+.verify-2fa .cell-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
+.verify-2fa .cell-ring rect {
+  fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 100;
+  stroke-dashoffset: 100; transition: stroke-dashoffset .45s cubic-bezier(.22,1,.36,1);
+}
+.verify-2fa .code-cell.filled .cell-ring rect { stroke-dashoffset: 0; }
+
+@media (max-width: 380px) {
+  .verify-2fa .code-row { gap: 6px; }
+  .verify-2fa .code-cell { width: 38px; height: 50px; }
+}
 
 /* ===================================================================
    CODE INPUTS — glow ao digitar, microanimação

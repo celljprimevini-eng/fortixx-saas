@@ -174,7 +174,8 @@ export default function VerifyPage() {
       </div>
       <main className="login-main">
       <div className="login-card-wrap">
-        <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
+        <div className={`login-card glass verify-2fa ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
+          <div className="verify-2fa-handle" aria-hidden="true" />
 
           {/*
             Três camadas empilhadas na MESMA posição (crossfade), não uma
@@ -205,6 +206,9 @@ export default function VerifyPage() {
                       onPaste={handlePaste}
                     />
                     {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
+                    <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                      <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
+                    </svg>
                   </div>
                 ))}
               </div>
