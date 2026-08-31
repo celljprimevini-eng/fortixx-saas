@@ -122,7 +122,11 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    ao vídeo de referência — NÃO é um traço de borda se desenhando, é só
    a cor da borda mudando em .18s quando o campo fica ativo/preenchido). */
 .code-cell { position: relative; width: 46px; height: 56px; }
-.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .18s ease, box-shadow .18s ease, transform .15s; outline: none; }
+.code-input { width: 100%; height: 100%; text-align: center; font-size: 1.4rem; font-family: var(--font-mono); font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-1); transition: border-color .18s ease, box-shadow .18s ease, transform .15s; }
+/* A borda vermelha (.code-cell.active) já é o indicador de foco aqui —
+   sobrescreve o outline azul global de acessibilidade (input:focus-visible,
+   linha 53) só nestas caixas, sem tirar o outline do resto do site. */
+.code-cell .code-input:focus-visible { outline: none; }
 .code-cell.active .code-input { border-color: var(--red); box-shadow: 0 0 0 1px rgba(248,113,113,.12), 0 0 16px rgba(248,113,113,.08); }
 .code-cell.filled .code-input { border-color: rgba(239,96,74,.75); box-shadow: 0 0 0 1px rgba(239,96,74,.1); }
 .code-cell.error-state .code-input { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.16); }
@@ -200,14 +204,36 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .verify-2fa .code-cell { width: 44px; height: 56px; }
 .verify-2fa .code-input { border-radius: 15px; border-width: 2px; font-size: 1.3rem; }
 
-/* Traço de borda desenhando ao preencher (confirmado nos frames do
-   vídeo): <rect> com pathLength=100, stroke-dashoffset 100->0. */
-.verify-2fa .cell-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
+/* Traço de borda: um FLASH rápido ao digitar (desenha e some), não fica
+   preso — igual ao vídeo. <rect> com pathLength=100, keyframe única de
+   stroke-dashoffset + opacity disparada quando .pulsing entra. */
+.verify-2fa .cell-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; opacity: 0; }
 .verify-2fa .cell-ring rect {
-  fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 100;
-  stroke-dashoffset: 100; transition: stroke-dashoffset .45s cubic-bezier(.22,1,.36,1);
+  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 5px rgba(255,91,64,.7)) drop-shadow(0 0 11px rgba(255,91,64,.45));
 }
-.verify-2fa .code-cell.filled .cell-ring rect { stroke-dashoffset: 0; }
+.verify-2fa .code-cell.pulsing .cell-ring { animation: cellRingFlash .7s cubic-bezier(.22,1,.36,1); }
+@keyframes cellRingFlash {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.verify-2fa .code-cell.pulsing .cell-ring rect { animation: cellRingDraw .7s cubic-bezier(.22,1,.36,1); }
+@keyframes cellRingDraw { 0% { stroke-dashoffset: 100; } 35%, 100% { stroke-dashoffset: 0; } }
+
+/* Depois do último dígito, um LED corre ao REDOR DA FILEIRA INTEIRA
+   (não mais por caixa) antes de começar a fusão/verificação. */
+.code-row-wrap { position: relative; }
+.verify-2fa .group-ring { position: absolute; inset: -8px; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+.verify-2fa .group-ring rect {
+  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-linecap: round;
+  stroke-dasharray: 22 78;
+  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 6px rgba(255,91,64,.7)) drop-shadow(0 0 13px rgba(255,91,64,.5));
+}
+.code-row-wrap.grouping .group-ring { opacity: 1; }
+.code-row-wrap.grouping .group-ring rect { animation: groupChase .6s linear infinite; }
+@keyframes groupChase { to { stroke-dashoffset: -100; } }
 
 @media (max-width: 380px) {
   .verify-2fa .code-row { gap: 6px; }
@@ -354,7 +380,8 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .demo-form h2 { margin: 0; color: #f5f5f5; font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -.7px; }
 .demo-description { margin: 16px 0 0; color: #707076; font-size: 16px; line-height: 1.55; text-align: center; }
 
-.demo-inputs { display: flex; gap: 14px; margin-top: 58px; }
+.demo-inputs-wrap { position: relative; margin-top: 58px; }
+.demo-inputs { display: flex; gap: 14px; }
 .demo-input {
   position: relative; width: 52px; height: 65px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
   border: 2px solid #29272b; border-radius: 15px; background: #111012; color: #f4f4f5; font-size: 26px; font-weight: 600;
@@ -369,12 +396,26 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    <rect> com pathLength=100 -> stroke-dasharray funciona em porcentagem
    do perímetro, então o efeito funciona igual em qualquer tamanho de
    caixa. Sem mask/conic-gradient (mesma técnica robusta já usada antes). */
-.demo-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
+.demo-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; opacity: 0; }
 .demo-ring rect {
-  fill: none; stroke: #f04d35; stroke-width: 2; stroke-dasharray: 100;
-  stroke-dashoffset: 100; transition: stroke-dashoffset .45s cubic-bezier(.22,1,.36,1);
+  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 5px rgba(255,91,64,.7)) drop-shadow(0 0 11px rgba(255,91,64,.45));
 }
-.demo-input-filled .demo-ring rect { stroke-dashoffset: 0; }
+.demo-input-pulsing .demo-ring { animation: demoRingFlash .7s cubic-bezier(.22,1,.36,1); }
+@keyframes demoRingFlash { 0% { opacity: 0; } 8% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0; } }
+.demo-input-pulsing .demo-ring rect { animation: demoRingDraw .7s cubic-bezier(.22,1,.36,1); }
+@keyframes demoRingDraw { 0% { stroke-dashoffset: 100; } 35%, 100% { stroke-dashoffset: 0; } }
+
+/* Depois do último dígito, um LED corre ao redor da FILEIRA INTEIRA antes
+   de começar a verificação. */
+.demo-group-ring { position: absolute; inset: -8px; opacity: 0; pointer-events: none; }
+.demo-group-ring rect {
+  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 22 78;
+  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 6px rgba(255,91,64,.7)) drop-shadow(0 0 13px rgba(255,91,64,.5));
+}
+.demo-inputs-wrap.grouping .demo-group-ring { opacity: 1; }
+.demo-inputs-wrap.grouping .demo-group-ring rect { animation: demoGroupChase .6s linear infinite; }
+@keyframes demoGroupChase { to { stroke-dashoffset: -100; } }
 
 .demo-cursor { position: absolute; width: 2px; height: 27px; background: #d8d8dc; animation: demoCursorBlink 800ms steps(1) infinite; }
 @keyframes demoCursorBlink { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }

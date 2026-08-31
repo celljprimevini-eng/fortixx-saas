@@ -30,6 +30,8 @@ export default function VerifyPage() {
   const [leaving, setLeaving] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(30);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
+  const [grouping, setGrouping] = useState(false);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -115,8 +117,14 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (allFilled) {
-      const t = setTimeout(() => beginVerification(), 150);
-      return () => clearTimeout(t);
+      // Igual ao vídeo: depois do último dígito, um LED corre ao REDOR DA
+      // FILEIRA INTEIRA (não mais por caixa) antes de começar a fusão.
+      const t1 = setTimeout(() => setGrouping(true), 150);
+      const t2 = setTimeout(() => {
+        setGrouping(false);
+        beginVerification();
+      }, 750);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [allFilled, beginVerification]);
 
@@ -126,6 +134,10 @@ export default function VerifyPage() {
     next[index] = clean;
     setDigits(next);
     if (clean) {
+      // O traço de cada caixa é um flash rápido (aparece e some), não fica
+      // desenhado — igual ao vídeo de referência.
+      setPulseIndex(index);
+      setTimeout(() => setPulseIndex((p) => (p === index ? null : p)), 700);
       const nextIndex = index < 5 ? index + 1 : -1;
       setActiveIndex(nextIndex);
       if (nextIndex >= 0) inputRefs.current[nextIndex]?.focus();
@@ -187,30 +199,35 @@ export default function VerifyPage() {
               <h1 className="login-title">Confirme seu acesso</h1>
               <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
 
-              <div className={`code-row ${shake ? 'shake' : ''}`} id="codeRow">
-                {digits.map((digit, i) => (
-                  <div
-                    key={i}
-                    className={`code-cell ${activeIndex === i ? 'active' : ''} ${digit ? 'filled' : ''} ${errorState ? 'error-state' : ''}`}
-                  >
-                    <input
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      className="code-input"
-                      inputMode="numeric"
-                      maxLength={1}
-                      aria-label={`Dígito ${i + 1}`}
-                      value={digit}
-                      disabled={disabled}
-                      onChange={(e) => handleChange(i, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(i, e)}
-                      onPaste={handlePaste}
-                    />
-                    {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
-                    <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
-                    </svg>
-                  </div>
-                ))}
+              <div className={`code-row-wrap ${grouping ? 'grouping' : ''}`}>
+                <div className={`code-row ${shake ? 'shake' : ''}`} id="codeRow">
+                  {digits.map((digit, i) => (
+                    <div
+                      key={i}
+                      className={`code-cell ${activeIndex === i ? 'active' : ''} ${digit ? 'filled' : ''} ${pulseIndex === i ? 'pulsing' : ''} ${errorState ? 'error-state' : ''}`}
+                    >
+                      <input
+                        ref={(el) => { inputRefs.current[i] = el; }}
+                        className="code-input"
+                        inputMode="numeric"
+                        maxLength={1}
+                        aria-label={`Dígito ${i + 1}`}
+                        value={digit}
+                        disabled={disabled}
+                        onChange={(e) => handleChange(i, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(i, e)}
+                        onPaste={handlePaste}
+                      />
+                      {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
+                      <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
+                      </svg>
+                    </div>
+                  ))}
+                </div>
+                <svg className="group-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <rect x="1" y="1" width="98" height="98" rx="24" ry="24" pathLength={100} />
+                </svg>
               </div>
 
               <p className="error-text">{errorMsg}</p>

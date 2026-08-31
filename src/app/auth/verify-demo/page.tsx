@@ -18,6 +18,8 @@ export default function VerifyDemoPage() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [digits, setDigits] = useState<string[]>(Array(CODE.length).fill(''));
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
+  const [grouping, setGrouping] = useState(false);
   const [checkVisible, setCheckVisible] = useState(false);
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -32,6 +34,8 @@ export default function VerifyDemoPage() {
       setPhase('idle');
       setDigits(Array(CODE.length).fill(''));
       setActiveIndex(0);
+      setPulseIndex(null);
+      setGrouping(false);
       setCheckVisible(false);
 
       let t = 700;
@@ -45,15 +49,21 @@ export default function VerifyDemoPage() {
           });
           setActiveIndex(i < CODE.length - 1 ? i + 1 : -1);
           setPhase('filling');
+          // Traço de borda: flash rápido (aparece e some), não fica preso.
+          setPulseIndex(i);
+          addTimer(() => setPulseIndex((p) => (p === i ? null : p)), t + 700);
         }, t);
         t += step;
       });
 
-      addTimer(() => { setPhase('verifying'); setActiveIndex(-1); }, t + 550);
-      addTimer(() => { setPhase('success'); }, t + 1050);
-      addTimer(() => { setCheckVisible(true); }, t + 1300);
+      // Depois do último dígito, um LED corre ao redor da FILEIRA INTEIRA
+      // antes de começar a verificação — igual ao vídeo de referência.
+      addTimer(() => setGrouping(true), t + 150);
+      addTimer(() => { setGrouping(false); setPhase('verifying'); setActiveIndex(-1); }, t + 750);
+      addTimer(() => { setPhase('success'); }, t + 1250);
+      addTimer(() => { setCheckVisible(true); }, t + 1500);
       // Loop: reinicia automaticamente depois de segurar o estado de sucesso.
-      addTimer(() => { run(); }, t + 4600);
+      addTimer(() => { run(); }, t + 4800);
     };
 
     run();
@@ -89,26 +99,31 @@ export default function VerifyDemoPage() {
               It&apos;ll auto-verify once entered.
             </p>
 
-            <div className="demo-inputs">
-              {digits.map((digit, index) => {
-                const isActive = activeIndex === index;
-                const isFilled = digit !== '';
+            <div className={`demo-inputs-wrap ${grouping ? 'grouping' : ''}`}>
+              <div className="demo-inputs">
+                {digits.map((digit, index) => {
+                  const isActive = activeIndex === index;
+                  const isFilled = digit !== '';
 
-                return (
-                  <div
-                    key={index}
-                    className={['demo-input', isActive ? 'demo-input-active' : '', isFilled ? 'demo-input-filled' : '', allFilled ? 'demo-input-complete' : '']
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {digit}
-                    {isActive && <span className="demo-cursor" />}
-                    <svg className="demo-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
-                    </svg>
-                  </div>
-                );
-              })}
+                  return (
+                    <div
+                      key={index}
+                      className={['demo-input', isActive ? 'demo-input-active' : '', isFilled ? 'demo-input-filled' : '', pulseIndex === index ? 'demo-input-pulsing' : '', allFilled ? 'demo-input-complete' : '']
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      {digit}
+                      {isActive && <span className="demo-cursor" />}
+                      <svg className="demo-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <rect x="2" y="2" width="96" height="96" rx="20" ry="20" pathLength={100} />
+                      </svg>
+                    </div>
+                  );
+                })}
+              </div>
+              <svg className="demo-group-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <rect x="1" y="1" width="98" height="98" rx="24" ry="24" pathLength={100} />
+              </svg>
             </div>
 
             <div className="demo-resend">
