@@ -66,6 +66,25 @@ const JOB_STATUS_PILL: Record<string, { cls: string; label: string }> = {
   closed: { cls: 'neutral', label: 'Encerrada' },
 };
 
+const SHIFT_TYPE_LABEL: Record<string, string> = {
+  manha: 'Manhã',
+  tarde: 'Tarde',
+  noite: 'Noite',
+  folga: 'Folga',
+};
+
+const SCHEDULE_STATUS_PILL: Record<string, { cls: string; label: string }> = {
+  scheduled: { cls: 'pending', label: 'Agendado' },
+  confirmed: { cls: 'ok', label: 'Confirmado' },
+  completed: { cls: 'ok', label: 'Concluído' },
+  absent: { cls: 'danger', label: 'Ausente' },
+};
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
 export async function GET() {
   const supabase = createClient();
 
@@ -113,24 +132,34 @@ ${platformBody}
   // como existing_tenant_id ao chamar api/onboarding (ver comentário no topo).
   html = html.replace('<body>', `<body data-tenant-id="${escapeHtml(tenantId)}">`);
 
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
   const [
     { data: colaboradores },
     { data: departments },
     { data: jobOpenings },
     { data: candidates },
     { data: onboardings },
+    { data: schedules },
+    { data: auditLogs },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, job_title, department_id, status, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
     supabase.from('departments').select('id, name').eq('tenant_id', tenantId),
     supabase.from('job_openings').select('id, title, department_id, location, employment_type, status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(30),
     supabase.from('candidates').select('id, full_name, job_opening_id, stage').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
     supabase.from('onboardings').select('id, profile_id, status, start_date, profiles(full_name, job_title)').eq('tenant_id', tenantId).eq('status', 'em_andamento').limit(20),
+    supabase.from('schedules').select('id, profile_id, shift_date, shift_type, start_time, end_time, status, profiles(full_name)').eq('tenant_id', tenantId).gte('shift_date', monthStart).lte('shift_date', monthEnd).order('shift_date', { ascending: true }).limit(200),
+    supabase.from('audit_logs').select('id, actor_id, action, entity_type, ip_address, created_at, profiles(full_name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
   ]) as unknown as [
     { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; status: string; created_at: string }[] | null },
     { data: { id: string; name: string }[] | null },
     { data: { id: string; title: string; department_id: string | null; location: string | null; employment_type: string; status: string }[] | null },
     { data: { id: string; full_name: string; job_opening_id: string | null; stage: string }[] | null },
     { data: { id: string; profile_id: string; status: string; start_date: string; profiles: { full_name: string; job_title: string | null } | { full_name: string; job_title: string | null }[] | null }[] | null },
+    { data: { id: string; profile_id: string; shift_date: string; shift_type: string; start_time: string | null; end_time: string | null; status: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
+    { data: { id: string; actor_id: string | null; action: string; entity_type: string | null; ip_address: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
   ];
 
   const deptMap = new Map((departments ?? []).map((d) => [d.id, d.name]));
@@ -217,7 +246,7 @@ ${platformBody}
       const onboardingIds = onboardings.map((o) => o.id);
       const { data: tasks } = await supabase
         .from('onboarding_tasks')
-        .select('onboarding_id, title, done')
+        .select('id, onboarding_id, title, done')
         .in('onboarding_id', onboardingIds)
         .order('order_index', { ascending: true });
 
@@ -235,7 +264,7 @@ ${platformBody}
       onbCards = computed.map(({ name, role, pct, dayNum, myTasks }, idx) => {
         const taskRows = myTasks.length === 0
           ? '<div class="onb-task"><span class="onb-check"></span><span class="label">Nenhuma tarefa cadastrada</span></div>'
-          : myTasks.map((t) => `<div class="onb-task ${t.done ? 'done' : ''}"><span class="onb-check">${t.done ? '✓' : ''}</span><span class="label">${escapeHtml(t.title)}</span></div>`).join('');
+          : myTasks.map((t) => `<div class="onb-task ${t.done ? 'done' : ''}"><span class="onb-check" data-task-id="${escapeHtml(t.id)}" role="checkbox" aria-checked="${t.done ? 'true' : 'false'}" tabindex="0">${t.done ? '✓' : ''}</span><span class="label">${escapeHtml(t.title)}</span></div>`).join('');
         return `<div class="onb-emp-card glass${idx === 0 ? ' expanded' : ''}"><div class="onb-emp-top"><div class="cell-person"><span class="avatar-circle" style="background:linear-gradient(135deg,var(--gold),#F59E0B);color:#1a1300">${escapeHtml(initials(name))}</span><div><div class="name">${name}</div><div class="sub">${role} · Dia ${dayNum} de 30</div></div></div><button class="expand-toggle" data-toggle-onb><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="progress-row"><span>Progresso</span><span>${pct}%</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="onb-checklist">${taskRows}</div></div>`;
       }).join('');
 
@@ -300,6 +329,59 @@ ${platformBody}
         }).join('');
     html = html.replace(
       /(<thead><tr><th>Usuário<\/th><th>Papel<\/th><th>Status<\/th><th>Último acesso<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
+      `$1${rows}$2`
+    );
+  }
+
+  // ---- Colaboradores > Escalas & Presença ----
+  // A subview inteira era HTML decorativo fixo (calendário, faltas, confirmações
+  // de leitura, histórico — nenhum vindo do banco). Nesta passada trocamos tudo
+  // isso por uma tabela simples e real (colaborador, data, turno, status) com as
+  // escalas do mês atual do tenant. Edição/criação de escala fica pra depois.
+  if (schedules) {
+    const rows = schedules.length === 0
+      ? `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhuma escala cadastrada ainda.</td></tr>`
+      : schedules.map((s) => {
+          const person = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+          const name = escapeHtml(person?.full_name ?? '—');
+          const shift = SHIFT_TYPE_LABEL[s.shift_type] ?? s.shift_type;
+          const times = s.start_time && s.end_time ? ` · ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}` : '';
+          const pill = SCHEDULE_STATUS_PILL[s.status] ?? SCHEDULE_STATUS_PILL.scheduled;
+          return `<tr><td>${name}</td><td>${formatDate(s.shift_date)}</td><td>${escapeHtml(shift)}${times}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td></tr>`;
+        }).join('');
+
+    const escalasSubview = `<div class="subview" id="colab-escalas">
+<div class="table-toolbar" style="justify-content:space-between">
+<div class="chip-group"><span class="chip active">Escalas do mês</span></div>
+<button class="btn btn-primary btn-sm">+ Cadastrar escala</button>
+</div>
+<div class="table-wrap glass">
+<table class="data-table">
+<thead><tr><th>Colaborador</th><th>Data</th><th>Turno</th><th>Status</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</div>
+</div>
+`;
+
+    html = html.replace(
+      /<div class="subview" id="colab-escalas">[\s\S]*?(?=<div class="subview" id="colab-organograma">)/,
+      escalasSubview
+    );
+  }
+
+  // ---- Configurações > Logs ----
+  if (auditLogs) {
+    const rows = auditLogs.length === 0
+      ? `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhum log registrado ainda.</td></tr>`
+      : auditLogs.map((a) => {
+          const actor = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles;
+          const actorName = actor?.full_name ? escapeHtml(actor.full_name) : 'Sistema';
+          return `<tr><td>${actorName}</td><td>${escapeHtml(a.action)}</td><td>${formatDateTime(a.created_at)}</td><td>${escapeHtml(a.ip_address ?? '—')}</td></tr>`;
+        }).join('');
+
+    html = html.replace(
+      /(<div class="subview" id="cfg-logs">\s*<div class="table-wrap glass">\s*<table class="data-table">\s*<thead><tr><th>Usuário<\/th><th>Ação<\/th><th>Data\/Hora<\/th><th>IP<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
       `$1${rows}$2`
     );
   }
