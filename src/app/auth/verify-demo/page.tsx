@@ -165,7 +165,7 @@ function CodeEditor() {
 
       <pre className="code-content">
         <code>
-          <span className="code-line"><span className="line-number">01</span> <span className="pink">import</span> {'{'} useState {'}'} <span className="pink">from</span> <span className="orange">&apos;react&apos;</span>;   <span className="green">// OTP Verification V2</span></span>
+          <span className="code-line"><span className="line-number">01</span> <span className="pink">import</span> {'{'} useState {'}'} <span className="pink">from</span> <span className="orange">&apos;react&apos;</span>;   <span className="green">{'// OTP Verification V2'}</span></span>
           <span className="code-line"><span className="line-number">02</span> <span className="pink">import</span> {'{'} motion {'}'} <span className="pink">from</span> <span className="orange">&apos;framer-motion&apos;</span>;</span>
           <span className="code-line"><span className="line-number">03</span></span>
           <span className="code-line"><span className="line-number">04</span> <span className="pink">export default function</span> <span className="yellow">OTPVerification</span>() {'{'}</span>
@@ -181,7 +181,7 @@ function CodeEditor() {
           <span className="code-line"><span className="line-number">14</span></span>
           <span className="code-line"><span className="line-number">15</span>   <span className="pink">const</span> handleVerify = () =&gt; {'{'}</span>
           <span className="code-line"><span className="line-number">16</span>     <span className="pink">if</span> (otp.join(<span className="orange">&quot;&quot;</span>).length === <span className="blue">6</span>) {'{'}</span>
-          <span className="code-line"><span className="line-number">17</span>       setIsVerified(<span className="blue">true</span>); <span className="green">// Call your API here</span></span>
+          <span className="code-line"><span className="line-number">17</span>       setIsVerified(<span className="blue">true</span>); <span className="green">{'// Call your API here'}</span></span>
           <span className="code-line"><span className="line-number">18</span>     {'}'}</span>
           <span className="code-line"><span className="line-number">19</span>   {'}'};</span>
         </code>
