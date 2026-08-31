@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe/client';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendEmail } from '@/lib/resend/client';
+import { sendEmail, paymentFailedEmail } from '@/lib/resend/client';
 import Stripe from 'stripe';
 
 /**
@@ -84,6 +84,12 @@ export async function POST(req: NextRequest) {
 
       await supabase.from('tenants').update({ subscription_status: 'past_due' }).eq('id', tenantId);
 
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('name')
+        .eq('id', tenantId)
+        .single();
+
       const { data: admin } = await supabase
         .from('profiles')
         .select('email, full_name')
@@ -92,11 +98,8 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (admin) {
-        await sendEmail({
-          to: admin.email,
-          subject: 'Problema com o pagamento da sua assinatura Fortixx',
-          html: `<p>Olá ${admin.full_name},</p><p>Não conseguimos processar o pagamento da sua assinatura. Atualize seus dados de cobrança para evitar interrupção do serviço.</p>`,
-        });
+        const { subject, html } = paymentFailedEmail(tenant?.name || 'sua empresa');
+        await sendEmail({ to: admin.email, subject, html });
       }
       break;
     }

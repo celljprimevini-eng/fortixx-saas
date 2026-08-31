@@ -17,9 +17,18 @@ import { platformScript } from '../_platform/script';
  * Recrutamento→Vagas+Pipeline, Onboarding→Checklist) passam a ser preenchidos com
  * dado real do tenant via substituição de string no HTML do protótipo, em vez do
  * conteúdo de demonstração fixo. Os demais sub-módulos (Escalas, Organograma,
- * Currículos, Entrevistas, Aprovações, Documentos, Treinamentos, Assistente RH,
+ * Currículos, Entrevistas, Documentos, Treinamentos, Assistente RH,
  * Analytics, Configurações) continuam com o conteúdo de demonstração original —
  * portar cada um é trabalho à parte, não incluído nesta passada.
+ *
+ * 2026-08-31: Recrutamento→Aprovações passa a listar candidatos reais em
+ * estágio 'entrevista' (aguardando decisão final), com data-candidate-id no
+ * card pra os botões Aprovar/Recusar do script.ts chamarem as APIs reais
+ * (api/recrutamento/[id]/approve e /reject). O tenant_id do usuário logado
+ * também é injetado em <body data-tenant-id> pro botão "+ Convidar usuário"
+ * (Configurações→Usuários) poder chamar api/onboarding vinculando o novo
+ * usuário ao MESMO tenant (sem isso o RPC provision_user_tenant criaria uma
+ * empresa nova).
  */
 export const runtime = 'nodejs';
 
@@ -100,6 +109,10 @@ ${platformBody}
     });
   }
 
+  // Injeta o tenant_id do usuário logado no <body>, pro script.ts poder mandar
+  // como existing_tenant_id ao chamar api/onboarding (ver comentário no topo).
+  html = html.replace('<body>', `<body data-tenant-id="${escapeHtml(tenantId)}">`);
+
   const [
     { data: colaboradores },
     { data: departments },
@@ -176,6 +189,22 @@ ${platformBody}
     html = html.replace(
       /<div class="subview" id="recrut-pipeline">\s*<div class="kanban-board">[\s\S]*?(?=<div class="subview" id="recrut-curriculos">)/,
       `<div class="subview" id="recrut-pipeline">\n<div class="kanban-board">${columns}</div>\n</div>\n`
+    );
+  }
+
+  // ---- Recrutamento > Aprovações (candidatos em entrevista, aguardando decisão) ----
+  if (candidates) {
+    const pendentes = candidates.filter((c) => c.stage === 'entrevista');
+    const items = pendentes.length === 0
+      ? `<p class="muted" style="padding:24px">Nenhum candidato aguardando aprovação.</p>`
+      : pendentes.map((c) => {
+          const jobTitle = c.job_opening_id ? (jobMap.get(c.job_opening_id) ?? '—') : '—';
+          return `<div class="approval-item glass" data-candidate-id="${escapeHtml(c.id)}"><div class="approval-info"><div class="t">Decisão final — ${escapeHtml(c.full_name)}</div><div class="d">${escapeHtml(jobTitle)}</div></div><div class="approval-actions"><span class="status-pill pending">Pendente</span><button class="btn btn-primary btn-sm btn-approve">Aprovar</button><button class="btn btn-danger-ghost btn-sm btn-reject">Recusar</button></div></div>`;
+        }).join('');
+
+    html = html.replace(
+      /<div class="subview" id="recrut-aprovacoes">[\s\S]*?(?=<div class="subview" id="recrut-dashboard">)/,
+      `<div class="subview" id="recrut-aprovacoes">${items}</div>\n`
     );
   }
 
