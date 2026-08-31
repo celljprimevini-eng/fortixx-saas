@@ -39,7 +39,7 @@ export default function VerifyDemoPage() {
       setCheckVisible(false);
 
       let t = 700;
-      const step = 550;
+      const step = 750;
       CODE.forEach((digit, i) => {
         addTimer(() => {
           setDigits((prev) => {
@@ -51,19 +51,19 @@ export default function VerifyDemoPage() {
           setPhase('filling');
           // Traço de borda: flash rápido (aparece e some), não fica preso.
           setPulseIndex(i);
-          addTimer(() => setPulseIndex((p) => (p === i ? null : p)), t + 700);
+          addTimer(() => setPulseIndex((p) => (p === i ? null : p)), t + 1100);
         }, t);
         t += step;
       });
 
       // Depois do último dígito, um LED corre ao redor da FILEIRA INTEIRA
       // antes de começar a verificação — igual ao vídeo de referência.
-      addTimer(() => setGrouping(true), t + 150);
-      addTimer(() => { setGrouping(false); setPhase('verifying'); setActiveIndex(-1); }, t + 750);
-      addTimer(() => { setPhase('success'); }, t + 1250);
-      addTimer(() => { setCheckVisible(true); }, t + 1500);
+      addTimer(() => setGrouping(true), t + 250);
+      addTimer(() => { setGrouping(false); setPhase('verifying'); setActiveIndex(-1); }, t + 1150);
+      addTimer(() => { setPhase('success'); }, t + 1650);
+      addTimer(() => { setCheckVisible(true); }, t + 1900);
       // Loop: reinicia automaticamente depois de segurar o estado de sucesso.
-      addTimer(() => { run(); }, t + 4800);
+      addTimer(() => { run(); }, t + 5200);
     };
 
     run();

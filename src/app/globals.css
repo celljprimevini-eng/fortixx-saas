@@ -207,32 +207,32 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 /* Traço de borda: um FLASH rápido ao digitar (desenha e some), não fica
    preso — igual ao vídeo. <rect> com pathLength=100, keyframe única de
    stroke-dashoffset + opacity disparada quando .pulsing entra. */
-.verify-2fa .cell-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; opacity: 0; }
+.verify-2fa .cell-ring { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); pointer-events: none; opacity: 0; }
 .verify-2fa .cell-ring rect {
-  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 5px rgba(255,91,64,.7)) drop-shadow(0 0 11px rgba(255,91,64,.45));
+  fill: none; stroke: #ff6b4a; stroke-width: 3; stroke-dasharray: 100; stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 2px rgba(255,107,74,1)) drop-shadow(0 0 8px rgba(255,107,74,.9)) drop-shadow(0 0 18px rgba(255,107,74,.65));
 }
-.verify-2fa .code-cell.pulsing .cell-ring { animation: cellRingFlash .7s cubic-bezier(.22,1,.36,1); }
+.verify-2fa .code-cell.pulsing .cell-ring { animation: cellRingFlash 1.1s cubic-bezier(.22,1,.36,1); }
 @keyframes cellRingFlash {
   0% { opacity: 0; }
-  8% { opacity: 1; }
-  55% { opacity: 1; }
+  10% { opacity: 1; }
+  68% { opacity: 1; }
   100% { opacity: 0; }
 }
-.verify-2fa .code-cell.pulsing .cell-ring rect { animation: cellRingDraw .7s cubic-bezier(.22,1,.36,1); }
-@keyframes cellRingDraw { 0% { stroke-dashoffset: 100; } 35%, 100% { stroke-dashoffset: 0; } }
+.verify-2fa .code-cell.pulsing .cell-ring rect { animation: cellRingDraw 1.1s cubic-bezier(.22,1,.36,1); }
+@keyframes cellRingDraw { 0% { stroke-dashoffset: 100; } 30%, 100% { stroke-dashoffset: 0; } }
 
 /* Depois do último dígito, um LED corre ao REDOR DA FILEIRA INTEIRA
    (não mais por caixa) antes de começar a fusão/verificação. */
 .code-row-wrap { position: relative; }
-.verify-2fa .group-ring { position: absolute; inset: -8px; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+.verify-2fa .group-ring { position: absolute; inset: -9px; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
 .verify-2fa .group-ring rect {
-  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-linecap: round;
-  stroke-dasharray: 22 78;
-  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 6px rgba(255,91,64,.7)) drop-shadow(0 0 13px rgba(255,91,64,.5));
+  fill: none; stroke: #ff6b4a; stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 26 74;
+  filter: drop-shadow(0 0 2px rgba(255,107,74,1)) drop-shadow(0 0 9px rgba(255,107,74,.9)) drop-shadow(0 0 20px rgba(255,107,74,.7));
 }
 .code-row-wrap.grouping .group-ring { opacity: 1; }
-.code-row-wrap.grouping .group-ring rect { animation: groupChase .6s linear infinite; }
+.code-row-wrap.grouping .group-ring rect { animation: groupChase .7s linear infinite; }
 @keyframes groupChase { to { stroke-dashoffset: -100; } }
 
 @media (max-width: 380px) {
@@ -396,25 +396,25 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
    <rect> com pathLength=100 -> stroke-dasharray funciona em porcentagem
    do perímetro, então o efeito funciona igual em qualquer tamanho de
    caixa. Sem mask/conic-gradient (mesma técnica robusta já usada antes). */
-.demo-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; opacity: 0; }
+.demo-ring { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); pointer-events: none; opacity: 0; }
 .demo-ring rect {
-  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-dasharray: 100; stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 5px rgba(255,91,64,.7)) drop-shadow(0 0 11px rgba(255,91,64,.45));
+  fill: none; stroke: #ff6b4a; stroke-width: 3; stroke-dasharray: 100; stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 2px rgba(255,107,74,1)) drop-shadow(0 0 8px rgba(255,107,74,.9)) drop-shadow(0 0 18px rgba(255,107,74,.65));
 }
-.demo-input-pulsing .demo-ring { animation: demoRingFlash .7s cubic-bezier(.22,1,.36,1); }
-@keyframes demoRingFlash { 0% { opacity: 0; } 8% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0; } }
-.demo-input-pulsing .demo-ring rect { animation: demoRingDraw .7s cubic-bezier(.22,1,.36,1); }
-@keyframes demoRingDraw { 0% { stroke-dashoffset: 100; } 35%, 100% { stroke-dashoffset: 0; } }
+.demo-input-pulsing .demo-ring { animation: demoRingFlash 1.1s cubic-bezier(.22,1,.36,1); }
+@keyframes demoRingFlash { 0% { opacity: 0; } 10% { opacity: 1; } 68% { opacity: 1; } 100% { opacity: 0; } }
+.demo-input-pulsing .demo-ring rect { animation: demoRingDraw 1.1s cubic-bezier(.22,1,.36,1); }
+@keyframes demoRingDraw { 0% { stroke-dashoffset: 100; } 30%, 100% { stroke-dashoffset: 0; } }
 
 /* Depois do último dígito, um LED corre ao redor da FILEIRA INTEIRA antes
    de começar a verificação. */
-.demo-group-ring { position: absolute; inset: -8px; opacity: 0; pointer-events: none; }
+.demo-group-ring { position: absolute; inset: -9px; opacity: 0; pointer-events: none; }
 .demo-group-ring rect {
-  fill: none; stroke: #ff5b40; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 22 78;
-  filter: drop-shadow(0 0 1px rgba(255,91,64,.9)) drop-shadow(0 0 6px rgba(255,91,64,.7)) drop-shadow(0 0 13px rgba(255,91,64,.5));
+  fill: none; stroke: #ff6b4a; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 26 74;
+  filter: drop-shadow(0 0 2px rgba(255,107,74,1)) drop-shadow(0 0 9px rgba(255,107,74,.9)) drop-shadow(0 0 20px rgba(255,107,74,.7));
 }
 .demo-inputs-wrap.grouping .demo-group-ring { opacity: 1; }
-.demo-inputs-wrap.grouping .demo-group-ring rect { animation: demoGroupChase .6s linear infinite; }
+.demo-inputs-wrap.grouping .demo-group-ring rect { animation: demoGroupChase .7s linear infinite; }
 @keyframes demoGroupChase { to { stroke-dashoffset: -100; } }
 
 .demo-cursor { position: absolute; width: 2px; height: 27px; background: #d8d8dc; animation: demoCursorBlink 800ms steps(1) infinite; }

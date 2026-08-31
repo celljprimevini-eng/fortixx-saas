@@ -119,11 +119,11 @@ export default function VerifyPage() {
     if (allFilled) {
       // Igual ao vídeo: depois do último dígito, um LED corre ao REDOR DA
       // FILEIRA INTEIRA (não mais por caixa) antes de começar a fusão.
-      const t1 = setTimeout(() => setGrouping(true), 150);
+      const t1 = setTimeout(() => setGrouping(true), 250);
       const t2 = setTimeout(() => {
         setGrouping(false);
         beginVerification();
-      }, 750);
+      }, 1150);
       return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [allFilled, beginVerification]);
@@ -137,7 +137,7 @@ export default function VerifyPage() {
       // O traço de cada caixa é um flash rápido (aparece e some), não fica
       // desenhado — igual ao vídeo de referência.
       setPulseIndex(index);
-      setTimeout(() => setPulseIndex((p) => (p === index ? null : p)), 700);
+      setTimeout(() => setPulseIndex((p) => (p === index ? null : p)), 1100);
       const nextIndex = index < 5 ? index + 1 : -1;
       setActiveIndex(nextIndex);
       if (nextIndex >= 0) inputRefs.current[nextIndex]?.focus();
