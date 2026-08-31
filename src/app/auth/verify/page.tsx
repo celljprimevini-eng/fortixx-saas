@@ -211,19 +211,23 @@ export default function VerifyPage() {
             <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''} ${merged ? 'merged' : ''}`} id="codeZone">
               <div className="code-row" id="codeRow">
                 {digits.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { inputRefs.current[i] = el; }}
-                    className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
-                    inputMode="numeric"
-                    maxLength={1}
-                    aria-label={`Dígito ${i + 1}`}
-                    value={digit}
-                    disabled={disabled}
-                    onChange={(e) => handleChange(i, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(i, e)}
-                    onPaste={handlePaste}
-                  />
+                  <div key={i} className={`code-cell ${digit ? 'filled' : ''}`}>
+                    <input
+                      ref={(el) => { inputRefs.current[i] = el; }}
+                      className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                      inputMode="numeric"
+                      maxLength={1}
+                      aria-label={`Dígito ${i + 1}`}
+                      value={digit}
+                      disabled={disabled}
+                      onChange={(e) => handleChange(i, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(i, e)}
+                      onPaste={handlePaste}
+                    />
+                    <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                      <rect x="2" y="2" width="96" height="96" rx="18" ry="18" pathLength={100} />
+                    </svg>
+                  </div>
                 ))}
               </div>
               <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">

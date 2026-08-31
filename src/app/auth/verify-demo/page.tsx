@@ -99,13 +99,15 @@ export default function VerifyDemoPage() {
     // sequência real) só pra dar pra inspecionar/printar sem correr
     // contra o relógio. Sem o parâmetro, roda a sequência normal.
     const freeze = new URLSearchParams(window.location.search).get('freeze');
-    if (freeze === 'merged' || freeze === 'success') {
+    if (freeze === 'merging' || freeze === 'merged' || freeze === 'success') {
       frozenRef.current = true;
       setDigits(['4', '8', '2', '1', '9', '5']);
       setDisabled(true);
       setMerging(true);
-      setMerged(true);
-      setStatusShow(true);
+      if (freeze === 'merged' || freeze === 'success') {
+        setMerged(true);
+        setStatusShow(true);
+      }
       if (freeze === 'success') {
         setStatusText('Identidade verificada com sucesso.');
         setSuccess(true);
@@ -145,17 +147,21 @@ export default function VerifyDemoPage() {
               <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''} ${merged ? 'merged' : ''}`} id="codeZone">
                 <div className="code-row" id="codeRow">
                   {digits.map((digit, i) => (
-                    <input
-                      key={i}
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
-                      inputMode="numeric"
-                      maxLength={1}
-                      aria-label={`Dígito ${i + 1}`}
-                      value={digit}
-                      disabled={disabled}
-                      readOnly
-                    />
+                    <div key={i} className={`code-cell ${digit ? 'filled' : ''}`}>
+                      <input
+                        ref={(el) => { inputRefs.current[i] = el; }}
+                        className={`code-input ${pulseIndex === i ? 'filled-pulse' : ''} ${errorState ? 'error-state' : ''}`}
+                        inputMode="numeric"
+                        maxLength={1}
+                        aria-label={`Dígito ${i + 1}`}
+                        value={digit}
+                        disabled={disabled}
+                        readOnly
+                      />
+                      <svg className="cell-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <rect x="2" y="2" width="96" height="96" rx="18" ry="18" pathLength={100} />
+                      </svg>
+                    </div>
                   ))}
                 </div>
                 <div className={`merge-badge ${merged ? 'show' : ''} ${success ? 'success' : ''}`} aria-hidden="true">
