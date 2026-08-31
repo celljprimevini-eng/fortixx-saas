@@ -1,163 +1,206 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * Cópia de demonstração de /auth/verify SEM chamada real ao Supabase —
- * existe só pra dar pra assistir a animação inteira sem precisar de login
- * nem de código real. Mesmo JSX/CSS da página de verdade (camadas
- * empilhadas: form -> spinner -> sucesso, crossfade, não slide); a única
- * troca é o resultado da verificação virar um mock que sempre dá "ok"
- * depois de um delay curto. Roda automaticamente ao abrir e tem um botão
- * "Repetir". Aceita ?freeze=verifying|success pra travar num estado fixo
- * sem correr contra os timers (útil pra inspecionar/printar).
+ * Reprodução visual 1:1 do vídeo de referência (tutorial "OTP Verification
+ * V2"): NÃO é uma tela de autenticação, é uma demo de motion-design.
+ * 6 dígitos (a contagem não muda a animação), textos em inglês, editor de
+ * código fake abaixo — tudo igual ao vídeo. Loop automático, sem botão de
+ * repetir. Classes CSS com prefixo demo- pra nunca colidir com as de
+ * /auth/verify (página real). Ver CORRECAO_OTP_VERIFY_DEMO_CLAUDE.md.
  */
-type Phase = 'idle' | 'verifying' | 'success';
+type Phase = 'idle' | 'filling' | 'verifying' | 'success';
+
+const CODE = ['4', '8', '2', '1', '9', '5'];
 
 export default function VerifyDemoPage() {
-  const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [phase, setPhase] = useState<Phase>('idle');
-  const [checkDraw, setCheckDraw] = useState(false);
-  const [successGlow, setSuccessGlow] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [frozen, setFrozen] = useState(false);
+  const [digits, setDigits] = useState<string[]>(Array(CODE.length).fill(''));
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [checkVisible, setCheckVisible] = useState(false);
 
-  const allFilled = digits.every((d) => d.length === 1);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const beginVerification = useCallback(() => {
-    setPhase('verifying');
-    setTimeout(() => {
-      setPhase('success');
-      setSuccessGlow(true);
-      setTimeout(() => setCheckDraw(true), 120);
-      setTimeout(() => setLeaving(true), 1600);
-    }, 900);
-  }, []);
+  useEffect(() => {
+    const addTimer = (callback: () => void, delay: number) => {
+      const timer = setTimeout(callback, delay);
+      timers.current.push(timer);
+    };
 
-  function resetAndPlay() {
-    setDigits(['', '', '', '', '', '']);
-    setPhase('idle');
-    setCheckDraw(false);
-    setSuccessGlow(false);
-    setLeaving(false);
-    setActiveIndex(0);
+    const run = () => {
+      setPhase('idle');
+      setDigits(Array(CODE.length).fill(''));
+      setActiveIndex(0);
+      setCheckVisible(false);
 
-    let i = 0;
-    const fake = ['4', '8', '2', '1', '9', '5'];
-    const t = setInterval(() => {
-      if (i >= 6) {
-        clearInterval(t);
-        setActiveIndex(-1);
-        return;
-      }
-      const idx = i;
-      setDigits((prev) => {
-        const next = [...prev];
-        next[idx] = fake[idx];
-        return next;
+      let t = 700;
+      const step = 550;
+      CODE.forEach((digit, i) => {
+        addTimer(() => {
+          setDigits((prev) => {
+            const next = [...prev];
+            next[i] = digit;
+            return next;
+          });
+          setActiveIndex(i < CODE.length - 1 ? i + 1 : -1);
+          setPhase('filling');
+        }, t);
+        t += step;
       });
-      setActiveIndex(idx + 1 <= 5 ? idx + 1 : -1);
-      i++;
-    }, 350);
-  }
 
-  useEffect(() => {
-    const freeze = new URLSearchParams(window.location.search).get('freeze');
-    if (freeze === 'verifying' || freeze === 'success') {
-      setFrozen(true);
-      setDigits(['4', '8', '2', '1', '9', '5']);
-      setActiveIndex(-1);
-      setPhase(freeze === 'verifying' ? 'verifying' : 'success');
-      if (freeze === 'success') {
-        setSuccessGlow(true);
-        setCheckDraw(true);
-      }
-      return;
-    }
-    resetAndPlay();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      addTimer(() => { setPhase('verifying'); setActiveIndex(-1); }, t + 550);
+      addTimer(() => { setPhase('success'); }, t + 1050);
+      addTimer(() => { setCheckVisible(true); }, t + 1300);
+      // Loop: reinicia automaticamente depois de segurar o estado de sucesso.
+      addTimer(() => { run(); }, t + 4600);
+    };
+
+    run();
+
+    return () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    };
   }, []);
 
-  useEffect(() => {
-    if (frozen) return;
-    if (allFilled && phase === 'idle') {
-      const t = setTimeout(() => beginVerification(), 150);
-      return () => clearTimeout(t);
-    }
-  }, [allFilled, phase, frozen, beginVerification]);
-
-  const isVerifying = phase === 'verifying';
   const isSuccess = phase === 'success';
+  const allFilled = digits.every((d) => d !== '');
 
   return (
-    <>
-      <div className="ambient" aria-hidden="true">
-        <div className="orb orb-1" />
-      </div>
-      <main className="login-main">
-        <div className="login-card-wrap">
-          <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
-            <div className="login-step active" id="step2fa">
-              <div className={`otp-form ${!isVerifying && !isSuccess ? '' : 'otp-form-hidden'}`}>
-                <span className="login-eyebrow">Verificação em duas etapas (DEMO — sem login)</span>
-                <h1 className="login-title">Confirme seu acesso</h1>
-                <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
+    <main className="otp-demo">
+      <div className="demo-page">
+        <header className="demo-header">
+          <h1>OTP Verification</h1>
+          <div className="demo-version">V2</div>
+        </header>
 
-                <div className="code-row" id="codeRow">
-                  {digits.map((digit, i) => (
-                    <div key={i} className={`code-cell ${activeIndex === i ? 'active' : ''} ${digit ? 'filled' : ''}`}>
-                      <input
-                        className="code-input"
-                        inputMode="numeric"
-                        maxLength={1}
-                        aria-label={`Dígito ${i + 1}`}
-                        value={digit}
-                        readOnly
-                      />
-                      {activeIndex === i && !digit && <span className="code-cursor" aria-hidden="true" />}
-                    </div>
-                  ))}
-                </div>
+        <section
+          className={['demo-card', isSuccess ? 'demo-card-success' : ''].filter(Boolean).join(' ')}
+        >
+          <div className="demo-handle" />
 
-                <p className="error-text" />
-              </div>
+          <div className={['demo-form', isSuccess || phase === 'verifying' ? 'demo-form-hidden' : ''].filter(Boolean).join(' ')}>
+            <h2>Let&apos;s verify your number</h2>
 
-              <div className={`otp-verifying ${isVerifying ? 'otp-verifying-visible' : ''}`} aria-hidden={!isVerifying}>
-                <div className="otp-spinner"><span /></div>
-              </div>
+            <p className="demo-description">
+              We&apos;ve sent a 6-digit code to your phone.
+              <br />
+              It&apos;ll auto-verify once entered.
+            </p>
 
-              <div className={`otp-success ${isSuccess ? 'otp-success-visible' : ''}`} aria-hidden={!isSuccess}>
-                <h1 className="login-title">Identidade verificada com sucesso.</h1>
-                <p className="login-sub">Preparando seu painel...</p>
-                <div className="otp-check-box">
-                  <svg className={`otp-check ${checkDraw ? 'otp-check-draw' : ''}`} viewBox="0 0 52 52" aria-hidden="true">
-                    <path d="M14 27.5L23 36L39 17" pathLength={100} />
-                  </svg>
-                </div>
-              </div>
+            <div className="demo-inputs">
+              {digits.map((digit, index) => {
+                const isActive = activeIndex === index;
+                const isFilled = digit !== '';
+
+                return (
+                  <div
+                    key={index}
+                    className={['demo-input', isActive ? 'demo-input-active' : '', isFilled ? 'demo-input-filled' : '', allFilled ? 'demo-input-complete' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {digit}
+                    {isActive && <span className="demo-cursor" />}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="demo-resend">
+              <span>Didn&apos;t receive the code?</span>
+              <strong>Resend</strong>
             </div>
           </div>
+
+          <div className={['demo-verifying', phase === 'verifying' ? 'demo-verifying-visible' : ''].filter(Boolean).join(' ')}>
+            <div className="demo-spinner"><span /></div>
+          </div>
+
+          <div className={['demo-success', isSuccess ? 'demo-success-visible' : ''].filter(Boolean).join(' ')}>
+            <div className="demo-success-content">
+              <h2>Verified successfully</h2>
+              <p>Your phone number has been verified.</p>
+              <div className="demo-check-box">
+                <svg
+                  className={['demo-check', checkVisible ? 'demo-check-draw' : ''].filter(Boolean).join(' ')}
+                  viewBox="0 0 52 52"
+                  aria-hidden="true"
+                >
+                  <path d="M14 27.5L23 36L39 17" pathLength={100} />
+                </svg>
+              </div>
+            </div>
+            <div className="demo-resend demo-resend-success">
+              <span>Didn&apos;t receive the code?</span>
+              <strong>Resend</strong>
+            </div>
+          </div>
+        </section>
+
+        <CodeEditor />
+      </div>
+    </main>
+  );
+}
+
+function CodeEditor() {
+  return (
+    <section className="code-editor">
+      <div className="code-editor-header">
+        <div className="traffic-lights">
+          <span className="traffic red" />
+          <span className="traffic yellow" />
+          <span className="traffic green" />
         </div>
-      </main>
-      <button
-        onClick={resetAndPlay}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          padding: '10px 18px',
-          borderRadius: 8,
-          background: '#5B8DEF',
-          color: '#fff',
-          border: 'none',
-          cursor: 'pointer',
-          fontWeight: 600,
-          zIndex: 999,
-        }}
-      >
-        Repetir animação
-      </button>
-    </>
+
+        <div className="code-editor-brand">
+          codeXr
+          <span>&lt;/&gt;</span>
+        </div>
+
+        <div className="code-editor-follow">Like &amp; Follow for more ❤️</div>
+      </div>
+
+      <pre className="code-content">
+        <code>
+          <span className="code-line"><span className="line-number">01</span> <span className="pink">import</span> {'{'} useState {'}'} <span className="pink">from</span> <span className="orange">&apos;react&apos;</span>;   <span className="green">// OTP Verification V2</span></span>
+          <span className="code-line"><span className="line-number">02</span> <span className="pink">import</span> {'{'} motion {'}'} <span className="pink">from</span> <span className="orange">&apos;framer-motion&apos;</span>;</span>
+          <span className="code-line"><span className="line-number">03</span></span>
+          <span className="code-line"><span className="line-number">04</span> <span className="pink">export default function</span> <span className="yellow">OTPVerification</span>() {'{'}</span>
+          <span className="code-line"><span className="line-number">05</span>   <span className="pink">const</span> [otp, setOtp] = useState(Array(6).fill(<span className="orange">&quot;&quot;</span>));</span>
+          <span className="code-line"><span className="line-number">06</span>   <span className="pink">const</span> [isVerified, setIsVerified] = useState(<span className="blue">false</span>);</span>
+          <span className="code-line"><span className="line-number">07</span></span>
+          <span className="code-line"><span className="line-number">08</span>   <span className="pink">const</span> handleChange = (value, index) =&gt; {'{'}</span>
+          <span className="code-line"><span className="line-number">09</span>     <span className="pink">if</span> (!/[0-9]/.test(value)) <span className="pink">return</span>;</span>
+          <span className="code-line"><span className="line-number">10</span>     <span className="pink">const</span> newOtp = [...otp];</span>
+          <span className="code-line"><span className="line-number">11</span>     newOtp[index] = value;</span>
+          <span className="code-line"><span className="line-number">12</span>     setOtp(newOtp);</span>
+          <span className="code-line"><span className="line-number">13</span>   {'}'};</span>
+          <span className="code-line"><span className="line-number">14</span></span>
+          <span className="code-line"><span className="line-number">15</span>   <span className="pink">const</span> handleVerify = () =&gt; {'{'}</span>
+          <span className="code-line"><span className="line-number">16</span>     <span className="pink">if</span> (otp.join(<span className="orange">&quot;&quot;</span>).length === <span className="blue">6</span>) {'{'}</span>
+          <span className="code-line"><span className="line-number">17</span>       setIsVerified(<span className="blue">true</span>); <span className="green">// Call your API here</span></span>
+          <span className="code-line"><span className="line-number">18</span>     {'}'}</span>
+          <span className="code-line"><span className="line-number">19</span>   {'}'};</span>
+        </code>
+      </pre>
+
+      <div className="code-annotation">
+        <svg viewBox="0 0 130 90" aria-hidden="true">
+          <path d="M105 8 C70 12 48 30 35 60" />
+          <path d="M35 60 L39 47" />
+          <path d="M35 60 L49 58" />
+        </svg>
+
+        <div>
+          <span>6-digit code</span>
+          <span>verification</span>
+        </div>
+
+        <div className="annotation-underline" />
+      </div>
+    </section>
   );
 }
