@@ -121,8 +121,8 @@ export default function VerifyDemoPage() {
                   );
                 })}
               </div>
-              <svg className="demo-group-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <rect x="1" y="1" width="98" height="98" rx="24" ry="24" pathLength={100} />
+              <svg className="demo-group-ring" viewBox="0 0 398 81" preserveAspectRatio="none" aria-hidden="true">
+                <rect x="2" y="2" width="394" height="77" rx="22" ry="22" pathLength={100} />
               </svg>
             </div>
 

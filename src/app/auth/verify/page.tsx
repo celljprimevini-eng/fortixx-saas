@@ -225,8 +225,8 @@ export default function VerifyPage() {
                     </div>
                   ))}
                 </div>
-                <svg className="group-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  <rect x="1" y="1" width="98" height="98" rx="24" ry="24" pathLength={100} />
+                <svg className="group-ring" viewBox="0 0 330 72" preserveAspectRatio="none" aria-hidden="true">
+                  <rect x="2" y="2" width="326" height="68" rx="20" ry="20" pathLength={100} />
                 </svg>
               </div>
 
