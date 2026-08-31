@@ -23,9 +23,6 @@ export default function VerifyPage() {
   const [errorState, setErrorState] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
-  const [merging, setMerging] = useState(false);
-  const [lineRun, setLineRun] = useState(false);
-  const [scanRun, setScanRun] = useState(false);
   const [statusShow, setStatusShow] = useState(false);
   const [statusText, setStatusText] = useState('Verificando identidade...');
   const [verifying, setVerifying] = useState(false);
@@ -88,10 +85,6 @@ export default function VerifyPage() {
     setErrorState(false);
     setErrorMsg('');
 
-    setMerging(true);
-    setLineRun(true);
-    setTimeout(() => setScanRun(true), 50);
-
     setTimeout(() => {
       setStatusShow(true);
       setStatusText('Verificando identidade...');
@@ -116,7 +109,6 @@ export default function VerifyPage() {
         setVerifying(false);
         setStatusShow(false);
         setShake(true);
-        setMerging(false);
         setErrorState(true);
         setErrorMsg(result.message);
         setTimeout(() => setShake(false), 520);
@@ -203,7 +195,7 @@ export default function VerifyPage() {
               <h1 className="login-title">Confirme seu acesso</h1>
               <p className="login-sub">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
 
-              <div className={`code-zone ${shake ? 'shake' : ''} ${merging ? 'merging' : ''}`} id="codeZone">
+              <div className={`code-zone ${shake ? 'shake' : ''}`} id="codeZone">
                 <div className="code-row" id="codeRow">
                   {digits.map((digit, i) => (
                     <input
@@ -221,8 +213,6 @@ export default function VerifyPage() {
                     />
                   ))}
                 </div>
-                <div className={`code-connect-line ${lineRun ? 'run' : ''}`} />
-                <div className={`code-scan-sweep ${scanRun ? 'run' : ''}`} />
               </div>
 
               <p className="error-text">{errorMsg}</p>

@@ -187,29 +187,13 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 @keyframes shakeX { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
 .code-zone.shake { animation: shakeX .5s; }
 
-.code-connect-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--blue-light), var(--gold)); opacity: 0; border-radius: 2px; pointer-events: none; }
-.code-connect-line.run { animation: lineConnect .45s var(--ease) forwards; }
-@keyframes lineConnect { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: .9; } }
-
-.code-scan-sweep { position: absolute; top: -8px; bottom: -8px; width: 38px; left: -38px; border-radius: 10px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(91,141,239,.5), rgba(251,191,36,.55), transparent); filter: blur(2px); opacity: 0; }
-.code-scan-sweep.run { animation: scanSweep .9s ease-in-out .45s forwards; }
-@keyframes scanSweep { 0% { left: -38px; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
-
-/* merge into a single component during verification */
-.code-zone.merging .code-row { gap: 0; }
-.code-zone.merging .code-input { border-radius: 0; margin-left: -1px; transition: border-radius .35s var(--ease), margin .35s var(--ease); }
-.code-zone.merging .code-input:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); margin-left: 0; }
-.code-zone.merging .code-input:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
-/* Existia aqui um anel de "LED chase" (borda giratória) ao redor dos dígitos
-   durante a verificação, feito com um conic-gradient quase todo transparente
-   (só ~24% colorido) tentando virar um anel fino via mask-composite: exclude.
-   Usuário reportou (com vídeo) uma linha diagonal girando por cima do código
-   em produção — a máscara falhava e o gradiente cônico cru aparecia girando
-   como um traço diagonal. Trocar pra border-image não resolveu (mesmo
-   artefato, confirmado isolando o elemento) — removido de vez. A linha de
-   conexão + a varredura (.code-connect-line / .code-scan-sweep) já dão
-   feedback visual suficiente de que os dígitos estão "se fundindo". */
+/* Existiam aqui 3 efeitos decorativos na verificação — linha conectora,
+   varredura, e os dígitos se fundindo numa barra só (merge) — que nunca
+   fizeram parte do vídeo de referência que o usuário mandou (lá os 6
+   dígitos ficam sempre separados, cada um com seu próprio glow). Além de
+   nunca ter sido o visual pedido, um efeito relacionado (LED chase,
+   ver histórico do commit) causava uma linha diagonal bugada em produção.
+   Removidos todos os 3 pra ficar simples e igual à referência. */
 
 .verify-status-wrap { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
 .verify-status-wrap.show { display: flex; animation: stepIn .35s var(--ease); }
