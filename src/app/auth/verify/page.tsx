@@ -46,29 +46,39 @@ export default function VerifyPage() {
   const allFilled = digits.every((d) => d.length === 1);
 
   const verifyCode = useCallback(async (sixDigitCode: string) => {
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const totpFactor = factors?.totp?.[0];
-    if (!totpFactor) {
-      return { ok: false, message: 'Nenhum fator de 2FA configurado nesta conta.' };
-    }
+    // Todas as chamadas do Supabase abaixo podem REJEITAR a Promise (rede
+    // caindo no meio, timeout, resposta inesperada) em vez de só retornar um
+    // `error` no objeto — sem o try/catch, uma rejeição aqui travava a tela
+    // pra sempre: inputs desabilitados (cinza), sem nenhuma animação rodando,
+    // porque o código nunca chegava no branch de sucesso OU erro.
+    try {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.[0];
+      if (!totpFactor) {
+        return { ok: false, message: 'Nenhum fator de 2FA configurado nesta conta.' };
+      }
 
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-      factorId: totpFactor.id,
-    });
-    if (challengeError || !challenge) {
-      return { ok: false, message: 'Não foi possível iniciar a verificação.' };
-    }
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: totpFactor.id,
+      });
+      if (challengeError || !challenge) {
+        return { ok: false, message: 'Não foi possível iniciar a verificação.' };
+      }
 
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId: totpFactor.id,
-      challengeId: challenge.id,
-      code: sixDigitCode,
-    });
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: totpFactor.id,
+        challengeId: challenge.id,
+        code: sixDigitCode,
+      });
 
-    if (verifyError) {
-      return { ok: false, message: 'Código incorreto. Verifique e tente novamente.' };
+      if (verifyError) {
+        return { ok: false, message: 'Código incorreto. Verifique e tente novamente.' };
+      }
+      return { ok: true, message: '' };
+    } catch (err) {
+      console.error('[verify] erro inesperado na verificação:', err);
+      return { ok: false, message: 'Erro de conexão. Tente novamente.' };
     }
-    return { ok: true, message: '' };
   }, [supabase]);
 
   const beginVerification = useCallback(async () => {
