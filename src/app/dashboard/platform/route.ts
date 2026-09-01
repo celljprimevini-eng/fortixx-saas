@@ -341,8 +341,63 @@ ${platformBody}
     { data: { training_id: string; profile_id: string; progress_pct: number }[] | null },
   ];
 
+  // Segunda leva de consultas — dados que só as seções "Início", "Analytics" e
+  // "Configurações > Multiempresa" usam. Fica num Promise.all separado pra não
+  // mexer na tupla tipada grande acima; mesmo padrão de tenant-scoping.
+  const [
+    { data: notifications },
+    { data: headcount },
+    { data: tenantRow },
+  ] = await Promise.all([
+    supabase.from('notifications').select('id, category, title, message, read, created_at').eq('tenant_id', tenantId).eq('read', false).order('created_at', { ascending: false }).limit(20),
+    // Crescimento do quadro / donut por área / ranking por depto: precisa de
+    // TODOS os colaboradores (não só os 50 mais recentes) com data de entrada,
+    // status e departamento. Nada de PII aqui além do que já é exposto.
+    supabase.from('profiles').select('created_at, status, department_id').eq('tenant_id', tenantId).order('created_at', { ascending: true }).limit(2000),
+    supabase.from('tenants').select('name, plan, created_at').eq('id', tenantId).single(),
+  ]) as unknown as [
+    { data: { id: string; category: string; title: string; message: string | null; read: boolean; created_at: string }[] | null },
+    { data: { created_at: string; status: string; department_id: string | null }[] | null },
+    { data: { name: string; plan: string; created_at: string } | null },
+  ];
+
   const deptMap = new Map((departments ?? []).map((d) => [d.id, d.name]));
   const jobMap = new Map((jobOpenings ?? []).map((j) => [j.id, j.title]));
+
+  // Série de headcount acumulado nos últimos `months` meses, a partir das datas
+  // de entrada (profiles.created_at). É headcount BRUTO acumulado (não desconta
+  // desligamentos) porque o schema não guarda data de desligamento — o número
+  // de cada mês é "quantas pessoas já tinham entrado até o fim daquele mês".
+  function monthlyHeadcount(rows: { created_at: string }[], months: number): { label: string; value: number }[] {
+    const now = new Date();
+    const series: { label: string; value: number }[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const ref = new Date(now.getFullYear(), now.getMonth() - i + 1, 0); // último dia do mês
+      const count = rows.filter((r) => new Date(r.created_at) <= ref).length;
+      series.push({ label: ref.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), value: count });
+    }
+    return series;
+  }
+
+  // Constrói o `d=` de um <path> suave (Catmull-Rom → Bézier) a partir de uma
+  // série de valores, no viewBox 600x180 usado pelos SVGs do protótipo.
+  function sparkPath(values: number[], w = 600, h = 180, pad = 12): { line: string; area: string } {
+    if (values.length === 0) return { line: '', area: '' };
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const span = max - min || 1;
+    const stepX = values.length > 1 ? (w - pad * 2) / (values.length - 1) : 0;
+    const pts = values.map((v, i) => [pad + i * stepX, h - pad - ((v - min) / span) * (h - pad * 2)] as const);
+    let line = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1];
+      const [x1, y1] = pts[i];
+      const cx = (x0 + x1) / 2;
+      line += ` C${cx.toFixed(1)},${y0.toFixed(1)} ${cx.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    }
+    const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${h} L${pts[0][0].toFixed(1)},${h} Z`;
+    return { line, area };
+  }
 
   // ---- Colaboradores > Diretório ----
   if (colaboradores) {
@@ -833,6 +888,203 @@ ${orgTreeHtml}
     html = html.replace(
       /(<div class="subview" id="cfg-logs">\s*<div class="table-wrap glass">\s*<table class="data-table">\s*<thead><tr><th>Usuário<\/th><th>Ação<\/th><th>Data\/Hora<\/th><th>IP<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
       `$1${rows}$2`
+    );
+  }
+
+  // ---- Início: KPIs, gráfico de crescimento, donut por área, feeds ----
+  // Antes: números e listas fixos ("1.248", "Pedro Lima", etc). Agora tudo sai
+  // dos dados reais do tenant. O gráfico "Crescimento do quadro" é headcount
+  // BRUTO acumulado por mês (não desconta desligamento — o schema não guarda
+  // data de saída), então é sempre monotônico crescente: mostra "quantas
+  // pessoas já tinham entrado até o fim de cada mês".
+  if (headcount) {
+    const totalHeadcount = headcount.length;
+    const activeOnboardings = (onboardings ?? []).length;
+    const openJobs = (jobOpenings ?? []).filter((j) => j.status === 'open').length;
+    const unread = (notifications ?? []).length;
+    const hires30 = headcount.filter((h) => Date.now() - new Date(h.created_at).getTime() <= 30 * 86400000).length;
+    const fmt = (n: number) => n.toLocaleString('pt-BR');
+
+    html = html
+      .replace(/(<div class="kpi-value" id="kpiColaboradores">)[^<]*(<\/div>)/, `$1${fmt(totalHeadcount)}$2`)
+      .replace(/(<div class="kpi-value" id="kpiVagas">)[^<]*(<\/div>)/, `$1${openJobs}$2`)
+      .replace(/(<div class="kpi-value" id="kpiOnboardings">)[^<]*(<\/div>)/, `$1${activeOnboardings}$2`)
+      .replace(/(<div class="kpi-value" id="kpiSolicitacoes">)[^<]*(<\/div>)/, `$1${unread}$2`)
+      .replace('↑ 4,2% nos últimos 30 dias', hires30 > 0 ? `↑ ${hires30} ${hires30 === 1 ? 'contratação' : 'contratações'} em 30 dias` : 'nenhuma contratação em 30 dias')
+      .replace('↑ 2 esta semana', `${openJobs} ${openJobs === 1 ? 'aberta agora' : 'abertas agora'}`)
+      .replace('→ estável', `${activeOnboardings} em andamento`)
+      .replace('3 vencem hoje', unread > 0 ? `${unread} não ${unread === 1 ? 'lida' : 'lidas'}` : 'nada pendente');
+
+    // Gráfico "Crescimento do quadro" (Início) — 12 meses.
+    const series = monthlyHeadcount(headcount, 12);
+    const { line, area } = sparkPath(series.map((s) => s.value));
+    if (line) {
+      html = html
+        .replace(/(<path class="area" d=")[^"]*(")/, `$1${area}$2`)
+        .replace(/(<path class="line-glow" id="dashGlowLine" d=")[^"]*(")/, `$1${line}$2`)
+        .replace(/(<path class="line" id="dashCrispLine" d=")[^"]*(")/, `$1${line}$2`);
+    }
+
+    // Donut "Colaboradores por área" (Início).
+    const byDept = new Map<string, number>();
+    for (const h of headcount) {
+      const label = h.department_id ? (deptMap.get(h.department_id) ?? 'Sem área') : 'Sem área';
+      byDept.set(label, (byDept.get(label) ?? 0) + 1);
+    }
+    const deptSorted = Array.from(byDept.entries()).sort((a, b) => b[1] - a[1]);
+    const donutColors = ['var(--blue)', 'var(--blue-light)', 'var(--gold)'];
+    const legend: { label: string; count: number; style: string }[] = deptSorted.slice(0, 3).map((entry, i) => ({
+      label: entry[0], count: entry[1], style: `background:${donutColors[i]}`,
+    }));
+    const restCount = deptSorted.slice(3).reduce((sum, [, n]) => sum + n, 0);
+    if (restCount > 0) legend.push({ label: 'Outras', count: restCount, style: 'background:var(--surface-strong);border:1px solid var(--border)' });
+    const donutLegend = legend.length === 0
+      ? '<li class="muted">Nenhum colaborador cadastrado ainda</li>'
+      : legend.map((e) => {
+          const pct = totalHeadcount > 0 ? Math.round((e.count / totalHeadcount) * 100) : 0;
+          return `<li><span class="dot" style="${e.style}"></span>${escapeHtml(e.label)} — ${pct}%</li>`;
+        }).join('');
+    html = html.replace(
+      /(<div class="donut"><span class="donut-center-label">)[^<]*(<\/span><\/div>\s*<ul class="donut-legend">)[\s\S]*?(<\/ul>)/,
+      `$1${fmt(totalHeadcount)}$2${donutLegend}$3`
+    );
+
+    // Painel "Solicitações pendentes" (Início) — notificações não lidas.
+    const NOTIF_LABEL: Record<string, string> = { documentos: 'Documento', escalas: 'Escala', onboarding: 'Onboarding', sistema: 'Sistema' };
+    const notifRows = (notifications ?? []).length === 0
+      ? '<div class="mini-row"><span class="muted">Nada pendente.</span></div>'
+      : (notifications ?? []).slice(0, 6).map((n) =>
+          `<div class="mini-row"><span>${escapeHtml(n.title)}</span><span class="status-pill pending">${NOTIF_LABEL[n.category] ?? 'Aviso'}</span></div>`
+        ).join('');
+    html = html.replace(
+      /(<h3>Solicitações pendentes<\/h3><\/div>\s*<div class="mini-list">)[\s\S]*?(<\/div>)/,
+      `$1${notifRows}$2`
+    );
+
+    // Painel "Atividade recente" (Início) — audit_logs.
+    const feedRows = (auditLogs ?? []).length === 0
+      ? '<div class="feed-row"><span class="feed-dot"></span>Nenhuma atividade registrada ainda</div>'
+      : (auditLogs ?? []).slice(0, 6).map((a) => {
+          const actor = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles;
+          const who = actor?.full_name ? escapeHtml(actor.full_name) : 'Sistema';
+          const time = new Date(a.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          return `<div class="feed-row"><span class="feed-dot"></span>${who} — ${escapeHtml(a.action)}<span class="feed-time">${time}</span></div>`;
+        }).join('');
+    html = html.replace(
+      /(<h3>Atividade recente<\/h3><\/div>\s*<div class="feed-list">)[\s\S]*?(<\/div>)/,
+      `$1${feedRows}$2`
+    );
+  }
+
+  // ---- Analytics: gráfico de crescimento, ranking por depto, insights ----
+  // Os 4 KPIs do topo já são reais (bloco "Analytics: KPIs principais" acima).
+  // Aqui tratamos o resto da view: gráfico de linha, turnover (sem dado — estado
+  // honesto), ranking de crescimento por departamento (real, janela de 90 dias)
+  // e os insights automáticos (derivados dos números reais).
+  if (headcount) {
+    const series12 = monthlyHeadcount(headcount, 12);
+    const { line, area } = sparkPath(series12.map((s) => s.value));
+    if (line) {
+      html = html
+        .replace(/(<path fill="url\(#lineGradAnalytics\)" d=")[^"]*(")/, `$1${area}$2`)
+        .replace(/(<path class="line-compare" id="analyticsCompareLine" d=")[^"]*(")/, `$1${line}$2`)
+        .replace(/(<path class="line-glow" id="analyticsGlowLine" d=")[^"]*(")/, `$1${line}$2`)
+        .replace(/(<path class="line" id="analyticsCrispLine" d=")[^"]*(")/, `$1${line}$2`);
+    }
+
+    // Turnover: sem tabela de desligamento no schema — estado honesto.
+    html = html.replace(
+      /(<h3>Turnover mensal<\/h3><\/div>\s*)<div class="bars analytics-bars in-view" id="turnoverBars">[\s\S]*?<\/div>\s*<div class="chart-tooltip" id="turnoverTooltip"><\/div>/,
+      `$1<p class="muted" style="padding:24px;font-size:.84rem">Sem dados de desligamento no período. O schema ainda não registra data de saída — quando registrar, o turnover mensal aparece aqui.</p>`
+    );
+
+    // Ranking "Crescimento por departamento" — headcount agora vs. 90 dias atrás.
+    const cutoff90 = Date.now() - 90 * 86400000;
+    const deptNow = new Map<string, number>();
+    const deptThen = new Map<string, number>();
+    for (const h of headcount) {
+      const key = h.department_id ?? 'sem';
+      deptNow.set(key, (deptNow.get(key) ?? 0) + 1);
+      if (new Date(h.created_at).getTime() < cutoff90) deptThen.set(key, (deptThen.get(key) ?? 0) + 1);
+    }
+    const deptRows = Array.from(deptNow.entries()).map(([key, now]) => {
+      const then = deptThen.get(key) ?? 0;
+      const pct = then > 0 ? Math.round(((now - then) / then) * 100) : (now > 0 ? 100 : 0);
+      const name = key === 'sem' ? 'Sem área' : (deptMap.get(key) ?? 'Sem área');
+      return { name, pct };
+    }).sort((a, b) => b.pct - a.pct).slice(0, 6);
+    const maxPct = Math.max(...deptRows.map((r) => Math.abs(r.pct)), 1);
+    const deptRankHtml = deptRows.length === 0
+      ? '<p class="muted" style="padding:16px">Nenhum departamento com colaboradores ainda.</p>'
+      : deptRows.map((r, i) =>
+          `<div class="dept-rank-row"><span class="dept-rank-name">${escapeHtml(r.name)}</span><div class="dept-rank-bar-wrap"><div class="dept-rank-bar" style="width:${Math.round((Math.abs(r.pct) / maxPct) * 100)}%${i === 0 ? ';background:var(--gold)' : ''}"></div></div><span class="dept-rank-value">${r.pct >= 0 ? '+' : ''}${r.pct}%</span></div>`
+        ).join('');
+    html = html.replace(
+      /<div class="dept-rank">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="panel glass insights-panel">)/,
+      `<div class="dept-rank">${deptRankHtml}</div>\n        </div>\n        `
+    );
+
+    // Insights automáticos — só afirmações que os dados reais sustentam.
+    const insights: string[] = [];
+    if (deptRows.length > 0 && deptRows[0].pct > 0) {
+      insights.push(`<li><span class="insight-icon up">↑</span><span>${escapeHtml(deptRows[0].name)} foi o departamento que mais cresceu nos últimos 90 dias (${deptRows[0].pct >= 0 ? '+' : ''}${deptRows[0].pct}%).</span></li>`);
+    }
+    const hires30count = headcount.filter((h) => Date.now() - new Date(h.created_at).getTime() <= 30 * 86400000).length;
+    insights.push(`<li><span class="insight-icon up">↑</span><span>${hires30count} ${hires30count === 1 ? 'pessoa entrou' : 'pessoas entraram'} nos últimos 30 dias.</span></li>`);
+    const activeOnboardings = (onboardings ?? []).length;
+    if (activeOnboardings > 0) {
+      insights.push(`<li><span class="insight-icon warn">!</span><span>${activeOnboardings} ${activeOnboardings === 1 ? 'colaborador está' : 'colaboradores estão'} em onboarding agora — acompanhe o checklist.</span></li>`);
+    }
+    insights.push('<li><span class="insight-icon warn">!</span><span>Turnover e satisfação ainda não têm fonte de dado no sistema — os widgets ficam vazios de propósito.</span></li>');
+    html = html.replace(
+      /(<h3>Insights automáticos<\/h3><\/div>\s*<ul class="insights-list">)[\s\S]*?(<\/ul>)/,
+      `$1${insights.join('')}$2`
+    );
+
+    // Linha de baixo (thirds): Satisfação e Onboardings no prazo não têm dado —
+    // trocamos o donut decorativo por um estado honesto; Tempo médio reaproveita
+    // o cálculo real de dias da candidatura à aprovação.
+    html = html.replace(
+      /(<h3>Satisfação<\/h3><\/div>)<div class="donut-wrap" style="justify-content:center"><div class="donut" data-target="92"[\s\S]*?<\/div><\/div>/,
+      `$1<p class="muted" style="padding:24px;font-size:.84rem">Sem pesquisa de satisfação cadastrada ainda.</p>`
+    );
+    html = html.replace(
+      /(<h3>Onboardings no prazo<\/h3><\/div>)<div class="donut-wrap" style="justify-content:center"><div class="donut" data-target="96"[\s\S]*?<\/div><\/div>/,
+      `$1<p style="text-align:center;margin-top:20px;font-family:var(--font-mono);font-weight:700;font-size:2.1rem">${(onboardings ?? []).length}</p><p class="muted" style="text-align:center;font-size:.78rem">em andamento agora</p>`
+    );
+    const approvedCands = (candidates ?? []).filter((c) => c.stage === 'aprovado');
+    const durations = approvedCands
+      .map((c) => (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000)
+      .filter((d) => Number.isFinite(d) && d >= 0);
+    const avgDays = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+    html = html.replace(
+      /(<h3>Tempo médio de contratação<\/h3><\/div>)<p style="text-align:center;margin-top:20px;[^"]*font-size:2\.1rem">[^<]*<\/p><p class="muted" style="text-align:center;font-size:\.78rem">[^<]*<\/p>/,
+      `$1<p style="text-align:center;margin-top:20px;font-family:var(--font-mono);font-weight:700;font-size:2.1rem">${avgDays != null ? avgDays + ' dias' : '—'}</p><p class="muted" style="text-align:center;font-size:.78rem">${avgDays != null ? 'da candidatura à aprovação' : 'sem contratações concluídas'}</p>`
+    );
+  }
+
+  // ---- Configurações > Multiempresa ----
+  // Era 3 cards fixos (Matriz/Curitiba/Recife). Multiempresa real (matriz +
+  // filiais no mesmo painel) não existe: cada empresa é um tenant isolado. Então
+  // mostramos só a empresa atual, com dado real, e explicamos o resto.
+  {
+    const companyName = escapeHtml(tenantRow?.name ?? 'Minha empresa');
+    const plan = escapeHtml(tenantRow?.plan ?? '—');
+    const count = (headcount ?? []).length;
+    const companyIcon = '<div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>';
+    html = html.replace(
+      /<div class="company-grid">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="subview")/,
+      `<div class="company-grid">
+<div class="company-card glass">
+<span class="badge-active">● EMPRESA ATIVA</span>
+${companyIcon}
+<h4>${companyName}</h4><div class="loc">Plano ${plan}</div>
+<div class="count">${count} ${count === 1 ? 'colaborador' : 'colaboradores'}</div>
+</div>
+</div>
+<p class="muted" style="font-size:.8rem;margin-top:14px">Multiempresa (matriz + filiais no mesmo painel) ainda não está ativo — hoje cada empresa é um tenant isolado. Quando for habilitado, as outras empresas aparecem aqui.</p>
+</div>
+`
     );
   }
 
