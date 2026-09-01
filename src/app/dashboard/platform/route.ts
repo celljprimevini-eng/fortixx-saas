@@ -128,6 +128,106 @@ function formatDateTime(iso: string): string {
   return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Matriz de permissões — camada VISUAL do dock lateral e das subtabs de
+// Configurações.
+//
+// Fonte de verdade: a matriz visual que já existia em Configurações >
+// Permissões (`_platform/body.ts`, subview `cfg-permissoes`, tabela
+// `.access-matrix`). Ela já mostrava, por papel, "Total / Editar / Visualizar
+// (Equipe|Próprio) / Sem acesso" para cada um dos 7 módulos do dock. As regras
+// abaixo são essa mesma tabela transcrita 1:1 para código: qualquer badge
+// diferente de "Sem acesso" = módulo aparece no dock para aquele papel;
+// "Sem acesso" = módulo escondido. Roles vêm do enum real do banco
+// (`profiles.role`, ver supabase/migrations/0001_initial_schema.sql:36 e
+// `roleSchema` em src/lib/validation/schemas.ts:24) — não inventamos nenhum
+// papel novo.
+//
+// Linha "Configurações" da matriz original: Admin=Total, RH/Gestor/
+// Colaborador=Sem acesso. Ou seja, hoje SÓ admin deveria ver o item
+// "Configurações" no dock — e isso já é consistente com o backend: a única
+// ação de escrita hoje dentro de Configurações (api/onboarding, "+ Convidar
+// usuário") exige `role === 'admin'` (src/app/api/onboarding/route.ts:48),
+// não admin+rh como as outras APIs. Como só admin chega em Configurações,
+// as 5 subtabs (Usuários/Permissões/Multiempresa/Logs/Aparência) ficam todas
+// visíveis pra admin e a questão "quais subtabs cada papel vê" já fica
+// resolvida por tabela — não há necessidade de uma matriz de subtab separada
+// por papel enquanto nenhum não-admin entra na seção.
+//
+// Consistência com as demais APIs (approve/reject, onboarding-tasks,
+// interviews) que já exigem role admin/rh: elas protegem AÇÕES dentro de
+// Recrutamento e Onboarding, não o módulo inteiro — e a matriz visual dá
+// "Visualizar" (não "Editar") pra Gestor nesses módulos, então é esperado
+// que Gestor veja o módulo mas tenha botões de escrita rejeitados pela API
+// (esse comportamento já existia antes desta mudança e não é afetado aqui).
+type Role = 'admin' | 'rh' | 'gestor' | 'colaborador';
+
+const DOCK_VIEW_ACCESS: Record<Role, readonly string[]> = {
+  // Nível 1/4 — "Total" ou "Visualizar" em todas as linhas da matriz.
+  admin: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics', 'view-config'],
+  // Nível 2/4 — matriz dá "Editar"/"Visualizar" em tudo, "Sem acesso" só em Configurações.
+  rh: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics'],
+  // Nível 3/4 — igual RH em módulos (Visualizar/Equipe), "Sem acesso" em Configurações.
+  gestor: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics'],
+  // Nível 4/4 — matriz dá "Sem acesso" pra Recrutamento, Analytics e Configurações.
+  colaborador: ['view-inicio', 'view-colaboradores', 'view-onboarding', 'view-assistente'],
+};
+
+const ALL_DOCK_VIEWS = ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics', 'view-config'] as const;
+
+// Subtabs de Configurações: só admin chega aqui (ver comentário acima), e a
+// matriz original dá "Total" pra admin em Configurações — ou seja, todas as
+// 5 subtabs continuam visíveis pra quem tem acesso ao módulo.
+const CONFIG_SUBTAB_ACCESS: Record<Role, readonly string[]> = {
+  admin: ['cfg-usuarios', 'cfg-permissoes', 'cfg-multiempresa', 'cfg-logs', 'cfg-aparencia'],
+  rh: [],
+  gestor: [],
+  colaborador: [],
+};
+
+const ALL_CONFIG_SUBTABS = ['cfg-usuarios', 'cfg-permissoes', 'cfg-multiempresa', 'cfg-logs', 'cfg-aparencia'] as const;
+
+/**
+ * Remove do HTML os botões do dock (`.dock-item[data-view="..."]`) e das
+ * subtabs de Configurações (`.subtab[data-sub="..."]`) que o papel do
+ * usuário logado não deveria ver, conforme DOCK_VIEW_ACCESS/
+ * CONFIG_SUBTAB_ACCESS acima.
+ *
+ * ⚠️ Isso é SÓ a camada visual (esconder do menu) — não é controle de acesso
+ * real. As <section id="view-...">/<div id="cfg-..."> continuam no HTML e
+ * nada impede alguém de reabrir o item via devtools ou reimplementar o
+ * clique. A proteção de verdade é (e continua sendo) feita nas rotas de API
+ * que já checam `profiles.role` no servidor (api/onboarding,
+ * api/recrutamento/[id]/approve|reject, api/onboarding-tasks/[id],
+ * api/interviews). Igual ao resto deste dashboard vanilla, que ainda não tem
+ * um mecanismo de auth por papel na camada de UI — só documentamos essa
+ * limitação aqui, no lugar do texto anterior que dizia que a matriz "não
+ * bloqueia nada de fato".
+ */
+function applyRoleVisibility(fullHtml: string, role: Role): string {
+  let out = fullHtml;
+
+  const allowedViews = new Set(DOCK_VIEW_ACCESS[role]);
+  for (const viewId of ALL_DOCK_VIEWS) {
+    if (allowedViews.has(viewId)) continue;
+    out = out.replace(
+      new RegExp(`<button class="dock-item[^"]*" data-view="${viewId}"[\\s\\S]*?<\\/button>\\s*`),
+      ''
+    );
+  }
+
+  const allowedSubtabs = new Set(CONFIG_SUBTAB_ACCESS[role]);
+  for (const subId of ALL_CONFIG_SUBTABS) {
+    if (allowedSubtabs.has(subId)) continue;
+    out = out.replace(
+      new RegExp(`<button class="subtab[^"]*" data-sub="${subId}">[^<]*<\\/button>\\s*`),
+      ''
+    );
+  }
+
+  return out;
+}
+
 export async function GET() {
   const supabase = createClient();
 
@@ -160,7 +260,7 @@ ${platformBody}
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id')
+    .select('tenant_id, role')
     .eq('id', user.id)
     .single();
 
@@ -171,9 +271,23 @@ ${platformBody}
     });
   }
 
+  const role = (profile?.role ?? 'colaborador') as Role;
+
   // Injeta o tenant_id do usuário logado no <body>, pro script.ts poder mandar
   // como existing_tenant_id ao chamar api/onboarding (ver comentário no topo).
   html = html.replace('<body>', `<body data-tenant-id="${escapeHtml(tenantId)}">`);
+
+  // Camada visual da matriz de permissões (dock + subtabs de Configurações).
+  // Ver comentário em applyRoleVisibility/DOCK_VIEW_ACCESS acima.
+  html = applyRoleVisibility(html, role);
+
+  // Atualiza o parágrafo de Configurações > Permissões pra refletir a nova
+  // realidade: a matriz agora corresponde ao que de fato some do dock/subtabs
+  // para cada papel (não é mais "só visual, sem efeito nenhum").
+  html = html.replace(
+    'Esta matriz é a estrutura visual de permissões da Fortixx — pronta para guiar a implementação real de autenticação por papel. Hoje ela não bloqueia nada de fato: qualquer pessoa que abrir este arquivo navega por todos os módulos, independente do papel mostrado aqui.',
+    'Esta matriz reflete o que hoje é escondido do menu lateral e das abas de Configurações para cada papel (dock e subtabs, calculado a partir de profiles.role no servidor). É uma proteção visual, não uma barreira real: quem forçar a URL/API de um módulo escondido esbarra na checagem de role feita nas rotas de API (quando ela existe) — nem toda ação tem essa checagem hoje.'
+  );
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
