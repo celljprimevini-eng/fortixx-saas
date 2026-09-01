@@ -1088,6 +1088,120 @@ ${companyIcon}
     );
   }
 
+  // ---- Assistente RH (view "view-assistente") ----
+  // As 4 subtabs eram 100% estáticas. Agora leem hr_faqs / hr_conversations
+  // (supabase/migrations/0011_hr_assistant.sql). Enquanto a migration não
+  // rodar, as queries voltam null e cada subtab mantém o conteúdo de
+  // demonstração — mesmo padrão `if (data)` do resto da rota.
+  const assistantEnabled = !!process.env.ANTHROPIC_API_KEY;
+
+  const [{ data: hrFaqs }, { data: hrConversations }] = await Promise.all([
+    supabase.from('hr_faqs').select('question, answer, views').eq('tenant_id', tenantId).order('views', { ascending: false }).limit(30),
+    supabase.from('hr_conversations').select('id, subject, status, last_message_at, profiles:profile_id(full_name)').eq('tenant_id', tenantId).order('last_message_at', { ascending: false }).limit(50),
+  ]) as unknown as [
+    { data: { question: string; answer: string; views: number }[] | null },
+    { data: { id: string; subject: string; status: string; last_message_at: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
+  ];
+
+  const HR_CONV_PILL: Record<string, { cls: string; label: string }> = {
+    open: { cls: 'info', label: 'Em aberto' },
+    resolved: { cls: 'ok', label: 'Resolvido' },
+    escalated: { cls: 'danger', label: 'Escalado para RH' },
+  };
+  const convPerson = (c: { profiles: { full_name: string } | { full_name: string }[] | null }): string => {
+    const p = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
+    return p?.full_name ? escapeHtml(p.full_name) : 'Colaborador';
+  };
+
+  html = html.replace(
+    '88% das dúvidas resolvidas automaticamente nos últimos 30 dias.',
+    assistantEnabled
+      ? 'Tire dúvidas de RH — o assistente responde pela base de conhecimento da empresa.'
+      : 'Configure ANTHROPIC_API_KEY no ambiente para ativar o assistente.'
+  );
+
+  // ---- Assistente RH > FAQ inteligente ----
+  if (hrFaqs) {
+    const cards = hrFaqs.length === 0
+      ? '<p class="muted" style="padding:24px">Nenhuma pergunta na base de conhecimento ainda. Adicione FAQs pra o assistente responder por elas.</p>'
+      : hrFaqs.map((f) =>
+          `<div class="panel glass"><h3 style="font-family:var(--font-display);font-weight:600;margin-bottom:8px">${escapeHtml(f.question)}</h3><p class="muted" style="font-size:.84rem">${escapeHtml(f.answer)}</p><div class="muted" style="font-size:.72rem;margin-top:10px">${f.views} ${f.views === 1 ? 'visualização' : 'visualizações'}</div></div>`
+        ).join('');
+    html = html.replace(
+      /(<div class="subview" id="ast-faq">\s*)<div class="dash-row thirds">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="subview" id="ast-historico">)/,
+      `$1<div class="dash-row thirds">${cards}</div>\n        </div>\n        `
+    );
+  }
+
+  // ---- Assistente RH > Histórico ----
+  if (hrConversations) {
+    const rows = hrConversations.length === 0
+      ? '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhum atendimento registrado ainda.</td></tr>'
+      : hrConversations.map((c) => {
+          const pill = HR_CONV_PILL[c.status] ?? HR_CONV_PILL.open;
+          return `<tr><td>${convPerson(c)}</td><td>${escapeHtml(c.subject)}</td><td>${formatDate(c.last_message_at)}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td></tr>`;
+        }).join('');
+    html = html.replace(
+      /(<div class="subview" id="ast-historico">\s*<div class="table-wrap glass">\s*<table class="data-table">\s*<thead><tr><th>Colaborador<\/th><th>Assunto<\/th><th>Data<\/th><th>Status<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
+      `$1${rows}$2`
+    );
+
+    // ---- Assistente RH > Escalonamento ----
+    const escalated = hrConversations.filter((c) => c.status === 'escalated');
+    const items = escalated.length === 0
+      ? '<p class="muted" style="padding:24px">Nenhum atendimento escalado no momento.</p>'
+      : escalated.map((c) =>
+          `<div class="approval-item glass" data-conversation-id="${escapeHtml(c.id)}"><div class="approval-info"><div class="t">${convPerson(c)} — ${escapeHtml(c.subject)}</div><div class="d">Escalado em ${formatDate(c.last_message_at)}</div></div><div class="approval-actions"><span class="status-pill danger">Escalado</span><button class="btn btn-primary btn-sm btn-hr-resolve">Marcar resolvido</button></div></div>`
+        ).join('');
+    html = html.replace(
+      /(<div class="subview" id="ast-escalonamento">)[\s\S]*?(<\/section>)(?=\s*<!--[^>]*ANALYTICS)/,
+      `$1${items}\n        </div>\n      </div>\n    $2`
+    );
+
+    // ---- Assistente RH > Atendimento (chat) ----
+    let hrMessages: { role: string; body: string }[] | null = null;
+    if (hrConversations.length > 0) {
+      const { data } = await supabase
+        .from('hr_messages')
+        .select('role, body')
+        .eq('conversation_id', hrConversations[0].id)
+        .order('created_at', { ascending: true })
+        .limit(50);
+      hrMessages = (data as { role: string; body: string }[] | null) ?? [];
+    }
+
+    html = html.replace(
+      '<div class="chat-layout">',
+      `<div class="chat-layout" data-assistant-enabled="${assistantEnabled ? '1' : '0'}">`
+    );
+
+    const listItems = hrConversations.length === 0
+      ? '<div class="chat-list-item"><div class="n">Sem conversas ainda</div><div class="m">As perguntas dos colaboradores aparecem aqui</div></div>'
+      : hrConversations.map((c, i) =>
+          `<div class="chat-list-item${i === 0 ? ' active' : ''}" data-conversation-id="${escapeHtml(c.id)}"><div class="n">${convPerson(c)}</div><div class="m">${escapeHtml(c.subject)}</div></div>`
+        ).join('');
+    html = html.replace(
+      /(<div class="chat-list glass">)[\s\S]*?(<\/div>)(?=\s*<div class="chat-panel glass">)/,
+      `$1${listItems}$2`
+    );
+
+    const bubbles = !assistantEnabled
+      ? '<div class="chat-bubble bot">O assistente está desligado: falta a variável ANTHROPIC_API_KEY no ambiente. Assim que ela for configurada, as respostas passam a funcionar.</div>'
+      : (hrMessages && hrMessages.length > 0)
+        ? hrMessages.map((m) => `<div class="chat-bubble ${m.role === 'user' ? 'user' : 'bot'}">${escapeHtml(m.body)}</div>`).join('')
+        : '<div class="chat-bubble bot">Oi! Sou o assistente de RH. Pergunte sobre férias, holerite, ponto ou benefícios.</div>';
+    html = html.replace(
+      /(<div class="chat-log" id="chatLog">)[\s\S]*?(<\/div>)(?=\s*<div class="chat-input-row">)/,
+      `$1${bubbles}$2`
+    );
+
+    const headName = hrConversations.length > 0 ? convPerson(hrConversations[0]) : 'Assistente RH';
+    html = html.replace(
+      '<strong>Pedro Lima</strong><span class="status-pill ok">Resolvido pelo bot</span>',
+      `<strong>${headName}</strong>${assistantEnabled ? '' : '<span class="status-pill danger">Offline</span>'}`
+    );
+  }
+
   return new NextResponse(html, {
     headers: {
       'content-type': 'text/html; charset=utf-8',

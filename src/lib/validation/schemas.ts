@@ -82,6 +82,19 @@ export const trainingProgressSchema = z.object({
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Assistente RH
+// ────────────────────────────────────────────────────────────────────────────
+
+export const hrAssistantMessageSchema = z.object({
+  conversation_id: z.string().uuid().nullable().optional(),
+  message: z.string().min(1, 'mensagem vazia').max(2000).trim(),
+});
+
+export const hrConversationUpdateSchema = z.object({
+  status: z.enum(['open', 'resolved', 'escalated']),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Stripe
 // ────────────────────────────────────────────────────────────────────────────
 

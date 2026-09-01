@@ -326,6 +326,62 @@ export interface Database {
           }
         ];
       };
+      hr_faqs: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          question: string;
+          answer: string;
+          views: number;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['hr_faqs']['Row']> & { tenant_id: string; question: string; answer: string };
+        Update: Partial<Database['public']['Tables']['hr_faqs']['Row']>;
+        Relationships: [];
+      };
+      hr_conversations: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          profile_id: string;
+          subject: string;
+          status: 'open' | 'resolved' | 'escalated';
+          last_message_at: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['hr_conversations']['Row']> & { tenant_id: string; profile_id: string; subject: string };
+        Update: Partial<Database['public']['Tables']['hr_conversations']['Row']>;
+        Relationships: [
+          {
+            foreignKeyName: 'hr_conversations_profile_id_fkey';
+            columns: ['profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      hr_messages: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          conversation_id: string;
+          role: 'user' | 'assistant';
+          body: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['hr_messages']['Row']> & { tenant_id: string; conversation_id: string; role: 'user' | 'assistant'; body: string };
+        Update: Partial<Database['public']['Tables']['hr_messages']['Row']>;
+        Relationships: [
+          {
+            foreignKeyName: 'hr_messages_conversation_id_fkey';
+            columns: ['conversation_id'];
+            isOneToOne: false;
+            referencedRelation: 'hr_conversations';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
