@@ -237,7 +237,9 @@ const docRows = [];
 for (let i = 0; i < N_DOCUMENTS; i++) {
   const p = pick(r, profiles);
   const cat = pick(r, DOC_CAT);
-  docRows.push(`(${q(randomUUID())}, ${q(TENANT)}, ${q(p.id)}, ${q(LG + ' ' + cat + '_' + i + '.pdf')}, ${q(cat)}, ${q(pick(r, OCR))}, ${rint(r, 55, 99)}, ${q(pick(r, APPROVAL))}, ${q(daysAgo(r, rint(r, 1, 60)))})`);
+  const fname = `${LG} ${cat}_${i}.pdf`;
+  const furl = `https://storage.local/loadgen/${randomUUID()}.pdf`;
+  docRows.push(`(${q(randomUUID())}, ${q(TENANT)}, ${q(p.id)}, ${q(fname)}, ${q(furl)}, ${q(cat)}, ${q(pick(r, OCR))}, ${rint(r, 55, 99)}, ${q(pick(r, APPROVAL))}, ${q(daysAgo(r, rint(r, 1, 60)))})`);
 }
 const TRAININGS = ['Segurança da Informação', 'Código de Conduta', 'LGPD na Prática', 'Onboarding Cultural', 'Prevenção ao Assédio', 'Ferramentas Internas'];
 const trainings = TRAININGS.slice(0, N_TRAININGS).map((t) => ({ id: randomUUID(), title: `${LG} ${t}` }));
@@ -259,7 +261,7 @@ ${onbTaskRows.join(',\n')};
 insert into schedules (id, tenant_id, profile_id, shift_date, shift_type, start_time, end_time, status) values
 ${schedRows.join(',\n')};
 
-insert into documents (id, tenant_id, profile_id, file_name, category, ocr_status, ocr_confidence, approval_status, created_at) values
+insert into documents (id, tenant_id, profile_id, file_name, file_url, category, ocr_status, ocr_confidence, approval_status, created_at) values
 ${docRows.join(',\n')};
 
 insert into trainings (id, tenant_id, title) values
