@@ -346,18 +346,15 @@ ${platformBody}
   // "Configurações > Multiempresa" usam. Fica num Promise.all separado pra não
   // mexer na tupla tipada grande acima; mesmo padrão de tenant-scoping.
   const [
-    { data: notifications },
     { data: headcount },
     { data: tenantRow },
   ] = await Promise.all([
-    supabase.from('notifications').select('id, category, title, message, read, created_at').eq('tenant_id', tenantId).eq('read', false).order('created_at', { ascending: false }).limit(20),
     // Crescimento do quadro / donut por área / ranking por depto: precisa de
     // TODOS os colaboradores (não só os 50 mais recentes) com data de entrada,
     // status e departamento. Nada de PII aqui além do que já é exposto.
     supabase.from('profiles').select('created_at, status, department_id').eq('tenant_id', tenantId).order('created_at', { ascending: true }).limit(2000),
     supabase.from('tenants').select('name, plan, created_at').eq('id', tenantId).single(),
   ]) as unknown as [
-    { data: { id: string; category: string; title: string; message: string | null; read: boolean; created_at: string }[] | null },
     { data: { created_at: string; status: string; department_id: string | null }[] | null },
     { data: { name: string; plan: string; created_at: string } | null },
   ];
@@ -902,19 +899,21 @@ ${orgTreeHtml}
     const totalHeadcount = headcount.length;
     const activeOnboardings = (onboardings ?? []).length;
     const openJobs = (jobOpenings ?? []).filter((j) => j.status === 'open').length;
-    const unread = (notifications ?? []).length;
+    // "Solicitações pendentes" = documentos aguardando aprovação (mesma
+    // definição do KPI em src/app/dashboard/page.tsx, que é a fonte dos
+    // números dos 4 cards do topo via query param do iframe — não replicar
+    // isso aqui pra não conflitar).
+    const pendingDocs = (documents ?? []).filter((d) => (d.approval_status ?? 'pending') === 'pending');
     const hires30 = headcount.filter((h) => Date.now() - new Date(h.created_at).getTime() <= 30 * 86400000).length;
     const fmt = (n: number) => n.toLocaleString('pt-BR');
 
+    // Só os textos de "delta" abaixo dos 4 KPIs — os valores dos KPIs vêm do
+    // page.tsx (query param -> script.ts setText), não daqui.
     html = html
-      .replace(/(<div class="kpi-value" id="kpiColaboradores">)[^<]*(<\/div>)/, `$1${fmt(totalHeadcount)}$2`)
-      .replace(/(<div class="kpi-value" id="kpiVagas">)[^<]*(<\/div>)/, `$1${openJobs}$2`)
-      .replace(/(<div class="kpi-value" id="kpiOnboardings">)[^<]*(<\/div>)/, `$1${activeOnboardings}$2`)
-      .replace(/(<div class="kpi-value" id="kpiSolicitacoes">)[^<]*(<\/div>)/, `$1${unread}$2`)
-      .replace('↑ 4,2% nos últimos 30 dias', hires30 > 0 ? `↑ ${hires30} ${hires30 === 1 ? 'contratação' : 'contratações'} em 30 dias` : 'nenhuma contratação em 30 dias')
+      .replace('↑ 4,2% nos últimos 30 dias', hires30 > 0 ? `↑ ${hires30} ${hires30 === 1 ? 'contratação' : 'contratações'} em 30 dias` : 'sem novas contratações em 30 dias')
       .replace('↑ 2 esta semana', `${openJobs} ${openJobs === 1 ? 'aberta agora' : 'abertas agora'}`)
       .replace('→ estável', `${activeOnboardings} em andamento`)
-      .replace('3 vencem hoje', unread > 0 ? `${unread} não ${unread === 1 ? 'lida' : 'lidas'}` : 'nada pendente');
+      .replace('3 vencem hoje', pendingDocs.length > 0 ? `${pendingDocs.length} aguardando aprovação` : 'nada pendente');
 
     // Gráfico "Crescimento do quadro" (Início) — 12 meses.
     const series = monthlyHeadcount(headcount, 12);
@@ -950,30 +949,36 @@ ${orgTreeHtml}
       `$1${fmt(totalHeadcount)}$2${donutLegend}$3`
     );
 
-    // Painel "Solicitações pendentes" (Início) — notificações não lidas.
-    const NOTIF_LABEL: Record<string, string> = { documentos: 'Documento', escalas: 'Escala', onboarding: 'Onboarding', sistema: 'Sistema' };
-    const notifRows = (notifications ?? []).length === 0
+    // Painel "Solicitações pendentes" (Início) — documentos aguardando aprovação
+    // (mesma definição do KPI). O regex termina em </div></div> (fim da
+    // .mini-list + do .panel) pra não deixar linhas de demonstração pra trás.
+    const DOC_CAT_LABEL: Record<string, string> = { identidade: 'Identidade', comprovante: 'Comprovante', contrato: 'Contrato', curriculo: 'Currículo', outro: 'Documento' };
+    const notifRows = pendingDocs.length === 0
       ? '<div class="mini-row"><span class="muted">Nada pendente.</span></div>'
-      : (notifications ?? []).slice(0, 6).map((n) =>
-          `<div class="mini-row"><span>${escapeHtml(n.title)}</span><span class="status-pill pending">${NOTIF_LABEL[n.category] ?? 'Aviso'}</span></div>`
-        ).join('');
+      : pendingDocs.slice(0, 6).map((d) => {
+          const person = Array.isArray(d.profiles) ? d.profiles[0] : d.profiles;
+          const cand = Array.isArray(d.candidates) ? d.candidates[0] : d.candidates;
+          const who = person?.full_name ?? cand?.full_name ?? '';
+          const label = d.category ? (DOC_CAT_LABEL[d.category] ?? 'Documento') : 'Documento';
+          return `<div class="mini-row"><span>${escapeHtml(label)}${who ? ' — ' + escapeHtml(who) : ''}</span><span class="status-pill pending">Aguardando</span></div>`;
+        }).join('');
     html = html.replace(
-      /(<h3>Solicitações pendentes<\/h3><\/div>\s*<div class="mini-list">)[\s\S]*?(<\/div>)/,
-      `$1${notifRows}$2`
+      /(<h3>Solicitações pendentes<\/h3><\/div>\s*<div class="mini-list">)[\s\S]*?<\/div>\s*<\/div>/,
+      `$1${notifRows}</div>`
     );
 
     // Painel "Atividade recente" (Início) — audit_logs.
     const feedRows = (auditLogs ?? []).length === 0
       ? '<div class="feed-row"><span class="feed-dot"></span>Nenhuma atividade registrada ainda</div>'
-      : (auditLogs ?? []).slice(0, 6).map((a) => {
+      : (auditLogs ?? []).slice(0, 7).map((a) => {
           const actor = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles;
           const who = actor?.full_name ? escapeHtml(actor.full_name) : 'Sistema';
           const time = new Date(a.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           return `<div class="feed-row"><span class="feed-dot"></span>${who} — ${escapeHtml(a.action)}<span class="feed-time">${time}</span></div>`;
         }).join('');
     html = html.replace(
-      /(<h3>Atividade recente<\/h3><\/div>\s*<div class="feed-list">)[\s\S]*?(<\/div>)/,
-      `$1${feedRows}$2`
+      /(<h3>Atividade recente<\/h3><\/div>\s*<div class="feed-list">)[\s\S]*?<\/div>\s*<\/div>/,
+      `$1${feedRows}</div>`
     );
   }
 
