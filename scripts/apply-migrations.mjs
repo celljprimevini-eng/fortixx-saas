@@ -23,7 +23,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF || 'qgsbdwsqdmuxawiodjfr';
+const REF = process.env.SUPABASE_PROJECT_REF || 'qgsbdwsqzmuxawiodjfr';
 
 if (!TOKEN || !TOKEN.startsWith('sbp_')) {
   console.error('❌ Defina SUPABASE_ACCESS_TOKEN (sbp_...) no ambiente antes de rodar.');
