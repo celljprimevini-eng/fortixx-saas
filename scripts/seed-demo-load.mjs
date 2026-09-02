@@ -214,10 +214,15 @@ const SCH_STATUS = ['scheduled', 'confirmed', 'confirmed', 'completed', 'absent'
 const now = new Date();
 const schedRows = [];
 const schedProfiles = profiles.filter((p) => p.status === 'active');
-for (let i = 0; i < N_SCHEDULES; i++) {
+const schedSeen = new Set(); // (profile_id, shift_date) é UNIQUE no schema
+let guard = 0;
+while (schedRows.length < N_SCHEDULES && guard++ < N_SCHEDULES * 20) {
   const p = pick(r, schedProfiles);
   const day = rint(r, 1, 28);
   const date = new Date(now.getFullYear(), now.getMonth(), day).toISOString().slice(0, 10);
+  const key = `${p.id}|${date}`;
+  if (schedSeen.has(key)) continue;
+  schedSeen.add(key);
   const shift = pick(r, SHIFTS);
   const times = shift === 'folga' ? ['null', 'null']
     : shift === 'manha' ? [`'06:00'`, `'14:00'`]
