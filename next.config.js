@@ -28,6 +28,9 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.supabase.co",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
+      // Assistente RH > digitalizador de documentos: Tesseract.js roda o OCR
+      // no navegador via Web Worker + WASM, tudo self-hosted em /tesseract/.
+      "worker-src 'self' blob:",
       "frame-src 'self' https://js.stripe.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",

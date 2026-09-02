@@ -248,6 +248,7 @@ export async function GET() {
 </head>
 <body>
 ${platformBody}
+<script src="/tesseract/tesseract.min.js"></script>
 <script>${platformScript}</script>
 </body>
 </html>`;
