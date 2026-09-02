@@ -34,7 +34,9 @@ export default async function DashboardPage() {
     { count: onboardingsAtivos },
     { count: solicitacoesPendentes },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'active'),
+    // Total de colaboradores = todos os profiles do tenant (bate com o donut
+    // "Colaboradores por área" no route.ts, que também conta todos).
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('job_openings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'open'),
     supabase.from('onboardings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'em_andamento'),
     supabase.from('documents').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('approval_status', 'pending'),
