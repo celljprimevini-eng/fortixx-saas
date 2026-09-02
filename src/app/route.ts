@@ -23,6 +23,7 @@ export async function GET() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('fortixx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Fortixx — Sua plataforma de RH, do recrutamento ao dia a dia</title>
 <meta name="description" content="Fortixx centraliza recrutamento, onboarding, comunicação interna e atendimento aos colaboradores em uma única plataforma de RH.">
 <link rel="preconnect" href="https://fonts.googleapis.com">

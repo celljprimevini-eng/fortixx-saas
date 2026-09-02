@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
@@ -86,6 +87,8 @@ export default function RegisterPage() {
         <div className="orb orb-1" />
         <div className="orb orb-2" />
       </div>
+
+      <ThemeToggle className="theme-toggle-fixed" />
 
       <header className="login-topbar">
         <a className="logo" href="/">

@@ -30,6 +30,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" data-theme="dark" className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        {/*
+          Aplica o tema salvo (localStorage 'fortixx-theme') ANTES da primeira
+          pintura, pra não piscar escuro→claro. O default continua escuro.
+          Mesmo script está nos route.ts da landing e do dashboard.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('fortixx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();",
+          }}
+        />
+      </head>
       <body>
         {/*
           Filtro SVG referenciado por `.login-card::after` (globals.css) pra
