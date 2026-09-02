@@ -91,23 +91,24 @@ for (const p of profiles) {
   p.manager = (sameDept.length ? pick(r, sameDept) : profiles[0]).id;
 }
 
-const authValues = profiles.map((p) =>
-  `('00000000-0000-0000-0000-000000000000', ${q(p.id)}, 'authenticated', 'authenticated', ${q(p.email)}, '$2a$10$loadgenloadgenloadgenloadgenloadgenloadgenlo', now(), ${q(p.created_at)}, ${q(p.created_at)}, '{"provider":"email","providers":["email"]}', ${q(JSON.stringify({ full_name: p.full }))}, false, '', '', '', '')`
-).join(',\n');
+// Não dá pra desligar o trigger on_auth_user_created (a Management API não é
+// owner de auth.users). Então trabalhamos COM o trigger: cada insert em
+// auth.users cria um tenant "lixo" + um profile role=admin; depois a gente
+// reancora o profile no tenant demo e apaga o tenant lixo.
+const JUNK_TENANT = '__LGX_TENANT__';
 
-const profValues = profiles.map((p) =>
-  `(${q(p.id)}, ${q(TENANT)}, ${q(p.full)}, ${q(p.email)}, ${q(p.role)}, ${q(p.dept[0])}, ${q(p.job_title)}, ${q(p.status)}, ${q(p.phone)}, ${q(p.created_at)}, ${q(p.created_at)})`
-).join(',\n');
+// UPDATE por email: reancora no tenant demo e preenche depto/cargo/status/etc.
+const profUpdates = profiles.map((p) =>
+  `update profiles set tenant_id=${q(TENANT)}, role=${q(p.role)}, department_id=${q(p.dept[0])}, job_title=${q(p.job_title)}, status=${q(p.status)}, phone=${q(p.phone)}, created_at=${q(p.created_at)} where email=${q(p.email)};`
+).join('\n');
 
 const mgrUpdates = profiles.filter((p) => p.manager)
-  .map((p) => `update profiles set manager_id=${q(p.manager)} where id=${q(p.id)};`).join('\n');
+  .map((p) => `update profiles set manager_id=${q(p.manager)} where email=${q(p.email)};`).join('\n');
 
-// ── CHUNK 1: limpeza + departamentos + auth.users + profiles (transacional) ──
-const chunk1 = `
-alter table auth.users disable trigger on_auth_user_created;
-
--- limpeza da carga anterior (email marker -> cascade apaga profiles e o que depende deles)
+// ── CHUNK 1a: limpeza ──────────────────────────────────────────────────────
+const chunk1a = `
 delete from auth.users where email like '%@${EMAIL_DOMAIN}';
+delete from tenants where name=${q(JUNK_TENANT)};
 delete from hr_messages where tenant_id=${q(TENANT)} and conversation_id in (select id from hr_conversations where subject like ${q(LG + '%')});
 delete from hr_conversations where tenant_id=${q(TENANT)} and subject like ${q(LG + '%')};
 delete from audit_logs where tenant_id=${q(TENANT)} and action like 'LG:%';
@@ -125,18 +126,17 @@ delete from documents where tenant_id=${q(TENANT)} and file_name like ${q(LG + '
 insert into departments (id, tenant_id, name) values
 ${DEPTS.map((d) => `(${q(d[0])}, ${q(TENANT)}, ${q(d[1])})`).join(',\n')}
 on conflict (id) do nothing;
+`;
 
-insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, confirmation_token, recovery_token, email_change_token_new, email_change)
-values
-${authValues};
+// ── CHUNK 1b: auth.users vai em lotes lá embaixo (batchInserts) ─────────────
 
-insert into profiles (id, tenant_id, full_name, email, role, department_id, job_title, status, phone, created_at, updated_at)
-values
-${profValues};
+// ── CHUNK 1c: reancora profiles no tenant demo + hierarquia + apaga lixo ────
+const chunk1c = `
+${profUpdates}
 
 ${mgrUpdates}
 
-alter table auth.users enable trigger on_auth_user_created;
+delete from tenants where name=${q(JUNK_TENANT)};
 `;
 
 // ── CHUNK 2: job_openings + candidates + interviews ─────────────────────────
@@ -311,11 +311,27 @@ ${msgRows.join(',\n')};
 `;
 
 // ── Executa ────────────────────────────────────────────────────────────────
+// 1b vai em lotes de 20 auth.users pra não estourar o timeout da API (o
+// trigger faz um loop de slug único por insert).
+function batchInserts(header, values, size = 20) {
+  const out = [];
+  for (let i = 0; i < values.length; i += size) {
+    out.push(`${header}\n${values.slice(i, i + size).join(',\n')};`);
+  }
+  return out;
+}
+const authBatches = batchInserts(
+  `insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, confirmation_token, recovery_token, email_change_token_new, email_change) values`,
+  profiles.map((p) => `('00000000-0000-0000-0000-000000000000', ${q(p.id)}, 'authenticated', 'authenticated', ${q(p.email)}, '$2a$10$loadgenloadgenloadgenloadgenloadgenloadgenlo', now(), ${q(p.created_at)}, ${q(p.created_at)}, '{"provider":"email","providers":["email"]}', ${q(JSON.stringify({ full_name: p.full, company_name: JUNK_TENANT }))}, false, '', '', '', '')`)
+);
+
 const chunks = [
-  ['1/4 limpeza + departamentos + 100 auth.users + profiles + hierarquia', chunk1],
-  ['2/4 10 vagas + 220 candidatos + 35 entrevistas', chunk2],
-  ['3/4 25 onboardings + tarefas + 140 escalas + 55 documentos + 6 treinamentos + progresso', chunk3],
-  ['4/4 500 audit logs + 45 notificações + 40 conversas RH + mensagens', chunk4],
+  ['1a  limpeza + departamentos', chunk1a],
+  ...authBatches.map((b, i) => [`1b.${i + 1}/${authBatches.length}  auth.users (trigger cria tenant+profile)`, b]),
+  ['1c  reancora os 100 profiles no tenant demo + hierarquia + apaga tenants lixo', chunk1c],
+  ['2   10 vagas + 220 candidatos + 35 entrevistas', chunk2],
+  ['3   25 onboardings + tarefas + 140 escalas + 55 documentos + 6 treinamentos + progresso', chunk3],
+  ['4   500 audit logs + 45 notificações + 40 conversas RH + mensagens', chunk4],
 ];
 
 for (const [label, body] of chunks) {
@@ -326,7 +342,7 @@ for (const [label, body] of chunks) {
   } catch (err) {
     console.log('FALHOU');
     console.error(`\n${err.message}\n`);
-    console.error('⚠️  Pare aqui e me mande esse erro. O trigger on_auth_user_created volta ligado sozinho (rollback).');
+    console.error('⚠️  Manda esse erro. Se parou no meio, roda de novo — o script é idempotente (limpa e recria).');
     process.exit(1);
   }
 }
