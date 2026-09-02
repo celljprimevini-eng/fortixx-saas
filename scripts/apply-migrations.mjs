@@ -54,15 +54,38 @@ const steps = [
   { name: 'seed:hr_faqs', sql: FAQ_SEED },
 ];
 
+const API = 'https://api.supabase.com/v1';
+const auth = { Authorization: `Bearer ${TOKEN}` };
+
 async function runSql(query) {
-  const res = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
+  const res = await fetch(`${API}/projects/${REF}/database/query`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    headers: { ...auth, 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 500)}`);
   return text;
+}
+
+// Confirma que o REF existe e que o token enxerga ele. Se não, lista os
+// projetos visíveis pra achar o ref certo.
+{
+  const res = await fetch(`${API}/projects`, { headers: auth });
+  if (!res.ok) {
+    console.error(`❌ Não consegui listar projetos (HTTP ${res.status}). Token inválido ou sem permissão.`);
+    process.exit(1);
+  }
+  const projects = await res.json();
+  const match = projects.find((p) => p.id === REF);
+  console.log(`Projetos visíveis por este token:`);
+  for (const p of projects) console.log(`  ${p.id === REF ? '→' : ' '} ${p.id}  ${p.name}  (org ${p.organization_id})`);
+  if (!match) {
+    console.error(`\n❌ O ref "${REF}" não está nos projetos acima. Rode de novo com o ref certo:`);
+    console.error(`   $env:SUPABASE_PROJECT_REF="<ref-de-cima>"; $env:SUPABASE_ACCESS_TOKEN="sbp_..."; node scripts/apply-migrations.mjs`);
+    process.exit(1);
+  }
+  console.log('');
 }
 
 const failures = [];
