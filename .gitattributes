@@ -1,0 +1,5 @@
+# Assets do Tesseract.js (digitalizador de documentos) — nunca normalizar.
+public/tesseract/** -text -eol
+*.wasm binary
+*.traineddata binary
+*.traineddata.gz binary
