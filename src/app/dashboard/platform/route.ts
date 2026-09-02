@@ -1093,7 +1093,11 @@ ${companyIcon}
   // (supabase/migrations/0011_hr_assistant.sql). Enquanto a migration não
   // rodar, as queries voltam null e cada subtab mantém o conteúdo de
   // demonstração — mesmo padrão `if (data)` do resto da rota.
-  const assistantEnabled = !!process.env.ANTHROPIC_API_KEY;
+  //
+  // O assistente FUNCIONA sem chave nenhuma: casa a pergunta com a base de
+  // FAQ do tenant (src/lib/hr-assistant/responder.ts). `aiUpgrade` só indica
+  // se o modo IA (Claude API) está ativo por cima disso — é informativo.
+  const aiUpgrade = !!process.env.ANTHROPIC_API_KEY;
 
   const [{ data: hrFaqs }, { data: hrConversations }] = await Promise.all([
     supabase.from('hr_faqs').select('question, answer, views').eq('tenant_id', tenantId).order('views', { ascending: false }).limit(30),
@@ -1115,9 +1119,9 @@ ${companyIcon}
 
   html = html.replace(
     '88% das dúvidas resolvidas automaticamente nos últimos 30 dias.',
-    assistantEnabled
-      ? 'Tire dúvidas de RH — o assistente responde pela base de conhecimento da empresa.'
-      : 'Configure ANTHROPIC_API_KEY no ambiente para ativar o assistente.'
+    aiUpgrade
+      ? 'Tire dúvidas de RH — o assistente responde pela base de conhecimento (com IA da Claude).'
+      : 'Tire dúvidas de RH — o assistente responde pela base de conhecimento da empresa.'
   );
 
   // ---- Assistente RH > FAQ inteligente ----
@@ -1170,10 +1174,9 @@ ${companyIcon}
       hrMessages = (data as { role: string; body: string }[] | null) ?? [];
     }
 
-    html = html.replace(
-      '<div class="chat-layout">',
-      `<div class="chat-layout" data-assistant-enabled="${assistantEnabled ? '1' : '0'}">`
-    );
+    // O chat sempre funciona (modo FAQ no mínimo). O atributo fica '1'; o
+    // script.ts continua lendo ele, então mantemos por compatibilidade.
+    html = html.replace('<div class="chat-layout">', '<div class="chat-layout" data-assistant-enabled="1">');
 
     const listItems = hrConversations.length === 0
       ? '<div class="chat-list-item"><div class="n">Sem conversas ainda</div><div class="m">As perguntas dos colaboradores aparecem aqui</div></div>'
@@ -1185,11 +1188,9 @@ ${companyIcon}
       `$1${listItems}$2`
     );
 
-    const bubbles = !assistantEnabled
-      ? '<div class="chat-bubble bot">O assistente está desligado: falta a variável ANTHROPIC_API_KEY no ambiente. Assim que ela for configurada, as respostas passam a funcionar.</div>'
-      : (hrMessages && hrMessages.length > 0)
-        ? hrMessages.map((m) => `<div class="chat-bubble ${m.role === 'user' ? 'user' : 'bot'}">${escapeHtml(m.body)}</div>`).join('')
-        : '<div class="chat-bubble bot">Oi! Sou o assistente de RH. Pergunte sobre férias, holerite, ponto ou benefícios.</div>';
+    const bubbles = (hrMessages && hrMessages.length > 0)
+      ? hrMessages.map((m) => `<div class="chat-bubble ${m.role === 'user' ? 'user' : 'bot'}">${escapeHtml(m.body)}</div>`).join('')
+      : '<div class="chat-bubble bot">Oi! Sou o assistente de RH. Pergunte sobre férias, holerite, ponto ou benefícios.</div>';
     html = html.replace(
       /(<div class="chat-log" id="chatLog">)[\s\S]*?(<\/div>)(?=\s*<div class="chat-input-row">)/,
       `$1${bubbles}$2`
@@ -1198,7 +1199,7 @@ ${companyIcon}
     const headName = hrConversations.length > 0 ? convPerson(hrConversations[0]) : 'Assistente RH';
     html = html.replace(
       '<strong>Pedro Lima</strong><span class="status-pill ok">Resolvido pelo bot</span>',
-      `<strong>${headName}</strong>${assistantEnabled ? '' : '<span class="status-pill danger">Offline</span>'}`
+      `<strong>${headName}</strong><span class="status-pill ${aiUpgrade ? 'ok' : 'info'}">${aiUpgrade ? 'IA ativa' : 'Modo FAQ'}</span>`
     );
   }
 

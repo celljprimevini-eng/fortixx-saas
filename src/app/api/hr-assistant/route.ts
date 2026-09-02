@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { hrAssistantMessageSchema } from '@/lib/validation/schemas';
-import { askHrAssistant, HrAssistantUnavailableError } from '@/lib/anthropic/client';
+import { askHrAssistant } from '@/lib/hr-assistant/responder';
 
 /**
  * Assistente RH (view "view-assistente" no dashboard vanilla).
@@ -14,8 +14,9 @@ import { askHrAssistant, HrAssistantUnavailableError } from '@/lib/anthropic/cli
  *        tenant, grava a resposta e devolve. Se a resposta indicar
  *        escalonamento, a thread vira status='escalated'.
  *
- * Sem ANTHROPIC_API_KEY o POST responde 503 com uma mensagem clara — a tela
- * mostra isso como um aviso, não quebra.
+ * Funciona sem nenhuma chave: por padrão casa a pergunta com a base `hr_faqs`
+ * do tenant (modo grátis). Se `ANTHROPIC_API_KEY` existir, usa a Claude API
+ * como upgrade — ver src/lib/hr-assistant/responder.ts.
  */
 
 export const runtime = 'nodejs';
@@ -119,20 +120,14 @@ export async function POST(req: NextRequest) {
     admin.from('tenants').select('name').eq('id', tenantId).single(),
   ]);
 
-  let reply;
-  try {
-    reply = await askHrAssistant({
-      companyName: tenant?.name ?? 'sua empresa',
-      faqs: faqs ?? [],
-      history,
-      message,
-    });
-  } catch (err) {
-    if (err instanceof HrAssistantUnavailableError) {
-      return NextResponse.json({ error: err.message, conversation_id: conversationId }, { status: 503 });
-    }
-    return NextResponse.json({ error: 'Falha ao consultar o assistente.', conversation_id: conversationId }, { status: 502 });
-  }
+  // askHrAssistant nunca lança por configuração: sem ANTHROPIC_API_KEY usa a
+  // base de FAQ (modo grátis), e se a IA falhar cai no FAQ também.
+  const reply = await askHrAssistant({
+    companyName: tenant?.name ?? 'sua empresa',
+    faqs: faqs ?? [],
+    history,
+    message,
+  });
 
   await admin.from('hr_messages').insert({
     tenant_id: tenantId,
