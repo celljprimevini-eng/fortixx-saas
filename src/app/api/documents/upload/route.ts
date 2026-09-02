@@ -106,7 +106,11 @@ export async function POST(req: NextRequest) {
     .from('documents')
     .upload(path, buffer, { contentType: file.type || 'application/octet-stream', upsert: false });
   if (upErr) {
-    return NextResponse.json({ error: 'Falha ao salvar o arquivo.' }, { status: 500 });
+    console.error('[documents/upload] storage falhou:', upErr);
+    return NextResponse.json(
+      { error: 'Falha ao salvar o arquivo.', detail: upErr.message },
+      { status: 500 }
+    );
   }
 
   const { data: signed } = await admin.storage
