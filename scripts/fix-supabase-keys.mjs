@@ -66,28 +66,42 @@ if (existsSync('.env.local')) {
 }
 
 // ── Vercel ─────────────────────────────────────────────────────────────────
-function sh(cmd, opts = {}) {
-  return execSync(cmd, { stdio: 'pipe', encoding: 'utf8', ...opts });
-}
+// Usa `printf '%s' <valor> | vercel env add` via bash — o jeito confiável
+// (execSync com {input:...} no Windows mandava valor errado/vazio).
 let vercelOk = true;
-try { sh('vercel whoami'); } catch { vercelOk = false; }
+try { execSync('vercel whoami', { stdio: 'ignore' }); } catch { vercelOk = false; }
 
 if (!vercelOk) {
-  console.log('\n⚠️  Vercel CLI não autenticada. Rode `vercel login` e depois este script de novo,');
-  console.log('   ou defina as 2 chaves à mão no painel (Settings → Environment Variables).');
+  console.log('\n⚠️  Vercel CLI não autenticada. Rode `vercel login` e este script de novo.');
   process.exit(0);
 }
 
+// A CLI da Vercel (59.x) só aceita não-interativo via flags:
+//   vercel env add KEY TARGET --value "<v>" --yes  [--type config | --sensitive]
+// (redirect de stdin e `echo | ` NÃO funcionam de forma confiável.)
+const PUBLIC = new Set(['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_PROJECT_REF']);
+
 for (const [k, v] of Object.entries(wanted)) {
+  const typeFlag = PUBLIC.has(k) ? '--type config' : '--sensitive';
   for (const target of ['production', 'preview', 'development']) {
-    try { sh(`vercel env rm ${k} ${target} --yes`, { stdio: 'ignore' }); } catch {}
+    try { execSync(`vercel env rm ${k} ${target} --yes`, { stdio: 'ignore' }); } catch {}
     try {
-      sh(`vercel env add ${k} ${target}`, { input: v + '\n', stdio: ['pipe', 'ignore', 'ignore'] });
+      execSync(`vercel env add ${k} ${target} ${typeFlag} --value ${JSON.stringify(v)} --yes`, { stdio: 'ignore' });
       console.log(`✓ ${k} → ${target}`);
     } catch {
-      console.log(`⚠️  falhou: ${k} → ${target}`);
+      console.log(`⚠️  falhou: ${k} → ${target}  (defina à mão no painel da Vercel)`);
     }
   }
 }
+
+// Confere que ficaram certas
+try {
+  const ls = execSync('vercel env ls production', { encoding: 'utf8' });
+  console.log('\nEstado na Vercel (production):');
+  for (const k of Object.keys(wanted)) {
+    const line = ls.split('\n').find((l) => l.trim().startsWith(k));
+    console.log(`  ${line ? line.trim().replace(/\s{2,}/g, ' ') : k + ' — NÃO ENCONTRADA'}`);
+  }
+} catch {}
 
 console.log('\n✅ Feito. Agora redeploye: vercel --prod --yes');
