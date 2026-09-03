@@ -12,10 +12,11 @@ import { parseResume } from '@/lib/recrutamento/parse-resume';
  * 2. Faz upload do currículo no Storage
  * 3. Cria o registro em `candidates` com stage='recebido'
  * 4. Faz o parsing do currículo AQUI MESMO (grátis, sem n8n): PDF via
- *    unpdf, imagem via Tesseract — extrai texto + e-mail + telefone +
- *    skills e grava em resume_raw_text / extracted_skills.
+ *    unpdf — extrai texto + e-mail + telefone + skills e grava em
+ *    resume_raw_text / extracted_skills. Imagem fica sem parsing (OCR no
+ *    servidor estoura o timeout) — o arquivo é salvo mesmo assim.
  */
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();

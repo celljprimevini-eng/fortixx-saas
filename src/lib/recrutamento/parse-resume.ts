@@ -65,11 +65,15 @@ async function textFromPdf(buffer: Buffer): Promise<string> {
   return Array.isArray(text) ? text.join('\n') : String(text ?? '');
 }
 
-async function textFromImage(buffer: Buffer): Promise<string> {
-  // Import dinâmico: só carrega o tesseract quando é imagem de verdade.
-  const Tesseract = (await import('tesseract.js')).default;
-  const { data } = await Tesseract.recognize(buffer, 'por+eng');
-  return data.text ?? '';
+/**
+ * OCR de imagem NO SERVIDOR estoura o timeout da função serverless (cold
+ * start + WASM + traineddata + recognize passam de 60s). Currículo quase
+ * sempre é PDF, então imagens ficam sem parsing automático — o arquivo é
+ * salvo e o RH lê manualmente. (Se um dia isso importar: fazer OCR no
+ * navegador antes do upload, ou mover pra um job assíncrono.)
+ */
+async function textFromImage(_buffer: Buffer): Promise<string> {
+  return '';
 }
 
 /**
