@@ -314,7 +314,10 @@ ${platformBody}
     supabase.from('job_openings').select('id, title, department_id, location, employment_type, status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(30),
     supabase.from('candidates').select('id, full_name, job_opening_id, stage, created_at, updated_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
     supabase.from('onboardings').select('id, profile_id, status, start_date, profiles(full_name, job_title)').eq('tenant_id', tenantId).eq('status', 'em_andamento').limit(20),
-    supabase.from('schedules').select('id, profile_id, shift_date, shift_type, start_time, end_time, status, profiles(full_name)').eq('tenant_id', tenantId).gte('shift_date', monthStart).lte('shift_date', monthEnd).order('shift_date', { ascending: true }).limit(200),
+    // profiles:profile_id — schedules tem 2 FKs pra profiles (profile_id e
+    // created_by), então o embed precisa dizer qual. Sem isso o PostgREST
+    // devolve erro e a seção Escalas fica com o HTML de demonstração.
+    supabase.from('schedules').select('id, profile_id, shift_date, shift_type, start_time, end_time, status, profiles:profile_id(full_name)').eq('tenant_id', tenantId).gte('shift_date', monthStart).lte('shift_date', monthEnd).order('shift_date', { ascending: true }).limit(200),
     supabase.from('audit_logs').select('id, actor_id, action, entity_type, ip_address, created_at, profiles(full_name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
     // Colaboradores > Hierarquia da Empresa: precisa de manager_id/email/phone,
     // que a query de "colaboradores" acima não busca (e é limitada a 50, mas
