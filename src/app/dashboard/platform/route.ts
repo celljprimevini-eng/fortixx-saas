@@ -312,7 +312,7 @@ ${platformBody}
     supabase.from('profiles').select('id, full_name, job_title, department_id, status, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
     supabase.from('departments').select('id, name').eq('tenant_id', tenantId),
     supabase.from('job_openings').select('id, title, department_id, location, employment_type, status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(30),
-    supabase.from('candidates').select('id, full_name, job_opening_id, stage, created_at, updated_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
+    supabase.from('candidates').select('id, full_name, job_opening_id, stage, created_at, updated_at, extracted_skills').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
     supabase.from('onboardings').select('id, profile_id, status, start_date, profiles(full_name, job_title)').eq('tenant_id', tenantId).eq('status', 'em_andamento').limit(20),
     // profiles:profile_id — schedules tem 2 FKs pra profiles (profile_id e
     // created_by), então o embed precisa dizer qual. Sem isso o PostgREST
@@ -335,7 +335,7 @@ ${platformBody}
     { data: { id: string; full_name: string; job_title: string | null; department_id: string | null; status: string; created_at: string }[] | null },
     { data: { id: string; name: string }[] | null },
     { data: { id: string; title: string; department_id: string | null; location: string | null; employment_type: string; status: string }[] | null },
-    { data: { id: string; full_name: string; job_opening_id: string | null; stage: string; created_at: string; updated_at: string }[] | null },
+    { data: { id: string; full_name: string; job_opening_id: string | null; stage: string; created_at: string; updated_at: string; extracted_skills: string[] | null }[] | null },
     { data: { id: string; profile_id: string; status: string; start_date: string; profiles: { full_name: string; job_title: string | null } | { full_name: string; job_title: string | null }[] | null }[] | null },
     { data: { id: string; profile_id: string; shift_date: string; shift_type: string; start_time: string | null; end_time: string | null; status: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
     { data: { id: string; actor_id: string | null; action: string; entity_type: string | null; ip_address: string | null; created_at: string; profiles: { full_name: string } | { full_name: string }[] | null }[] | null },
@@ -568,7 +568,11 @@ ${platformBody}
       ? `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Nenhum candidato ainda.</td></tr>`
       : candidates.slice(0, 20).map((c) => {
           const jobTitle = c.job_opening_id ? (jobMap.get(c.job_opening_id) ?? '—') : '—';
-          return `<tr><td>${escapeHtml(c.full_name)}</td><td>${escapeHtml(jobTitle)}</td><td><div class="tags"></div></td><td>—</td></tr>`;
+          const skills = Array.isArray(c.extracted_skills) ? c.extracted_skills.slice(0, 6) : [];
+          const tags = skills.length
+            ? skills.map((s) => `<span class="tag">${escapeHtml(s)}</span>`).join('')
+            : '<span class="muted" style="font-size:.78rem">—</span>';
+          return `<tr><td>${escapeHtml(c.full_name)}</td><td>${escapeHtml(jobTitle)}</td><td><div class="tags">${tags}</div></td><td>${formatDate(c.created_at)}</td></tr>`;
         }).join('');
     html = html.replace(
       /(<thead><tr><th>Candidato<\/th><th>Cargo de interesse<\/th><th>Habilidades<\/th><th>Data<\/th><\/tr><\/thead>\s*<tbody>)[\s\S]*?(<\/tbody>)/,
