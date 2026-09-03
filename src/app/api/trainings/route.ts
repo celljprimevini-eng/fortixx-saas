@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { trainingCreateSchema } from '@/lib/validation/schemas';
 
 /**
  * Onboarding > Treinamentos (subview "onb-treinamentos"). Antes eram 3
@@ -56,4 +58,46 @@ export async function GET() {
   });
 
   return NextResponse.json({ trainings: result });
+}
+
+/**
+ * POST — cria um treinamento no catálogo (Onboarding › Treinamentos,
+ * botão "+ Novo treinamento"). Exige role admin/rh (policy
+ * trainings_write_admin_rh).
+ */
+export async function POST(req: NextRequest) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, tenant_id')
+    .eq('id', user.id)
+    .single();
+  if (!profile || !['admin', 'rh'].includes(profile.role)) {
+    return NextResponse.json({ error: 'Sem permissão para criar treinamentos.' }, { status: 403 });
+  }
+
+  const parsed = trainingCreateSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  const { data: created, error } = await admin
+    .from('trainings')
+    .insert({
+      tenant_id: profile.tenant_id,
+      title: parsed.data.title,
+      description: parsed.data.description || null,
+    })
+    .select('id, title, description')
+    .single();
+
+  if (error || !created) {
+    return NextResponse.json({ error: 'Falha ao criar o treinamento.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, training: created });
 }

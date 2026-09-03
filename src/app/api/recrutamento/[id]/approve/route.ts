@@ -92,7 +92,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     candidate.full_name,
     linkData?.properties?.action_link || `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
   );
-  await sendEmail({ to: candidate.email, ...template });
+  // sendEmail nunca lança, mas o generateLink acima pode — o candidato já foi
+  // aprovado (user/profile/onboarding criados), então o e-mail é best-effort.
+  const emailResult = await sendEmail({ to: candidate.email, ...template });
 
-  return NextResponse.json({ success: true, profile_id: newUser.user.id });
+  return NextResponse.json({
+    success: true,
+    profile_id: newUser.user.id,
+    email_sent: !('skipped' in emailResult || 'error' in emailResult),
+  });
 }

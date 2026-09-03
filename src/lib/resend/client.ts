@@ -1,20 +1,40 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface SendEmailArgs {
   to: string;
   subject: string;
   html: string;
 }
 
+/**
+ * Envia um e-mail transacional. **Nunca lança** — se `RESEND_API_KEY` não
+ * estiver configurada (ou for dummy), ou se o envio falhar, retorna
+ * `{ skipped }` / `{ error }` e a rota que chamou segue normalmente. E-mail
+ * é efeito colateral: não deve derrubar a operação principal (aprovar
+ * candidato, avisar de escala, etc.).
+ *
+ * Instanciação lazy (dentro da função) — `new Resend(undefined)` lança no
+ * construtor, então nunca no escopo de módulo (senão o build quebra quando a
+ * chave falta). Ver bug histórico em fortixx-saas-estado-deploy §bugs.
+ */
 export async function sendEmail({ to, subject, html }: SendEmailArgs) {
-  return resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL || 'Fortixx <noreply@fortixx.com>',
-    to,
-    subject,
-    html,
-  });
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.includes('dummy')) {
+    console.warn('[resend] RESEND_API_KEY ausente/dummy — e-mail não enviado:', subject);
+    return { skipped: true as const };
+  }
+  try {
+    const resend = new Resend(apiKey);
+    return await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Fortixx <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    });
+  } catch (err) {
+    console.error('[resend] falha ao enviar e-mail:', subject, err);
+    return { error: err instanceof Error ? err.message : 'falha no envio' };
+  }
 }
 
 // ============================================================================

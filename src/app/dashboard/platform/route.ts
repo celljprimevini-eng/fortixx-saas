@@ -430,7 +430,7 @@ ${platformBody}
 
     html = html.replace(
       /<div class="subview active" id="recrut-vagas">\s*<div class="dash-row thirds">[\s\S]*?(?=<div class="subview" id="recrut-pipeline">)/,
-      `<div class="subview active" id="recrut-vagas">\n<div class="dash-row thirds">${cards}</div>\n</div>\n`
+      `<div class="subview active" id="recrut-vagas">\n<div class="table-toolbar" style="justify-content:flex-end"><button class="btn btn-primary btn-sm" id="btnNewJob">+ Nova vaga</button></div>\n<div class="dash-row thirds">${cards}</div>\n</div>\n`
     );
   }
 
@@ -624,10 +624,11 @@ ${platformBody}
           return `<tr><td>${name}</td><td>${formatDate(s.shift_date)}</td><td>${escapeHtml(shift)}${times}</td><td><span class="status-pill ${pill.cls}">${pill.label}</span></td></tr>`;
         }).join('');
 
+    const peopleMeta = escapeHtml(JSON.stringify((colaboradores ?? []).map((c) => ({ id: c.id, full_name: c.full_name }))));
     const escalasSubview = `<div class="subview" id="colab-escalas">
 <div class="table-toolbar" style="justify-content:space-between">
 <div class="chip-group"><span class="chip active">Escalas do mês</span></div>
-<button class="btn btn-primary btn-sm">+ Cadastrar escala</button>
+<button class="btn btn-primary btn-sm" id="btnNewSchedule" data-people="${peopleMeta}">+ Cadastrar escala</button>
 </div>
 <div class="table-wrap glass">
 <table class="data-table">
@@ -812,7 +813,7 @@ ${orgTreeHtml}
 
     html = html.replace(
       /<div class="subview" id="onb-treinamentos">[\s\S]*?(?=<div class="subview" id="onb-status">)/,
-      `<div class="subview" id="onb-treinamentos">${treinamentosBody}</div>\n`
+      `<div class="subview" id="onb-treinamentos"><div class="table-toolbar" style="justify-content:flex-end"><button class="btn btn-primary btn-sm" id="btnNewTraining">+ Novo treinamento</button></div>${treinamentosBody}</div>\n`
     );
   }
 
@@ -1140,7 +1141,7 @@ ${companyIcon}
         ).join('');
     html = html.replace(
       /(<div class="subview" id="ast-faq">\s*)<div class="dash-row thirds">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="subview" id="ast-historico">)/,
-      `$1<div class="dash-row thirds">${cards}</div>\n        </div>\n        `
+      `$1<div class="table-toolbar" style="justify-content:flex-end;margin-bottom:14px"><button class="btn btn-primary btn-sm" id="btnNewFaq">+ Nova pergunta</button></div><div class="dash-row thirds">${cards}</div>\n        </div>\n        `
     );
   }
 

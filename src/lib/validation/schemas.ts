@@ -81,6 +81,42 @@ export const trainingProgressSchema = z.object({
   progress_pct: z.number().int().min(0).max(100),
 });
 
+export const trainingCreateSchema = z.object({
+  title: z.string().min(2).max(140).trim(),
+  description: z.string().max(2000).trim().optional().or(z.literal('')),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Recrutamento > criar vaga
+// ────────────────────────────────────────────────────────────────────────────
+
+export const jobOpeningCreateSchema = z.object({
+  title: z.string().min(2).max(140).trim(),
+  department_id: z.string().uuid().nullable().optional(),
+  location: z.string().max(120).trim().optional().or(z.literal('')),
+  employment_type: z.enum(['clt', 'pj', 'estagio', 'temporario']).default('clt'),
+  description: z.string().max(4000).trim().optional().or(z.literal('')),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Colaboradores > cadastrar escala
+// ────────────────────────────────────────────────────────────────────────────
+
+export const scheduleCreateSchema = z.object({
+  profile_id: z.string().uuid(),
+  shift_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data AAAA-MM-DD'),
+  shift_type: z.enum(['manha', 'tarde', 'noite', 'folga']),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Assistente RH > adicionar FAQ
+// ────────────────────────────────────────────────────────────────────────────
+
+export const hrFaqCreateSchema = z.object({
+  question: z.string().min(4).max(300).trim(),
+  answer: z.string().min(4).max(2000).trim(),
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // Assistente RH
 // ────────────────────────────────────────────────────────────────────────────
