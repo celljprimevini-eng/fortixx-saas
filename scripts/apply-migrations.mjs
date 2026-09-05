@@ -51,6 +51,7 @@ const steps = [
   { name: '0009_interviews', sql: readFileSync(join(ROOT, 'supabase/migrations/0009_interviews.sql'), 'utf8') },
   { name: '0010_trainings', sql: readFileSync(join(ROOT, 'supabase/migrations/0010_trainings.sql'), 'utf8') },
   { name: '0011_hr_assistant', sql: readFileSync(join(ROOT, 'supabase/migrations/0011_hr_assistant.sql'), 'utf8') },
+  { name: '0012_cakto_billing', sql: readFileSync(join(ROOT, 'supabase/migrations/0012_cakto_billing.sql'), 'utf8') },
   { name: 'seed:hr_faqs', sql: FAQ_SEED },
 ];
 

@@ -20,6 +20,9 @@ export interface Database {
           plan: 'basico' | 'pro' | 'enterprise';
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
+          cakto_customer_id: string | null;
+          cakto_subscription_id: string | null;
+          billing_provider: 'stripe' | 'cakto';
           subscription_status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'paused' | 'incomplete_expired' | 'unpaid';
           trial_ends_at: string | null;
           created_at: string;

@@ -357,7 +357,7 @@ ${platformBody}
     // TODOS os colaboradores (não só os 50 mais recentes) com data de entrada,
     // status e departamento. Nada de PII aqui além do que já é exposto.
     supabase.from('profiles').select('created_at, status, department_id').eq('tenant_id', tenantId).order('created_at', { ascending: true }).limit(2000),
-    supabase.from('tenants').select('name, plan, created_at').eq('id', tenantId).single(),
+    supabase.from('tenants').select('name, plan, created_at, subscription_status').eq('id', tenantId).single(),
   ]) as unknown as [
     { data: { created_at: string; status: string; department_id: string | null }[] | null },
     { data: { name: string; plan: string; created_at: string } | null },
@@ -1086,6 +1086,13 @@ ${orgTreeHtml}
     const companyName = escapeHtml(tenantRow?.name ?? 'Minha empresa');
     const plan = escapeHtml(tenantRow?.plan ?? '—');
     const count = (headcount ?? []).length;
+    const caktoEnabled = !!process.env.CAKTO_CHECKOUT_URL && !!process.env.CAKTO_WEBHOOK_SECRET;
+    const subActive = (tenantRow as any)?.subscription_status === 'active';
+    const billingCta = caktoEnabled && !subActive
+      ? '<button class="btn btn-gold" id="btnAssinarCakto" style="margin-top:12px">Assinar com cart&atilde;o (recorrente)</button>'
+      : caktoEnabled && subActive
+        ? '<span class="badge-active" style="margin-top:12px;display:inline-block">&#9679; Assinatura ativa</span>'
+        : '';
     const companyIcon = '<div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>';
     html = html.replace(
       /<div class="company-grid">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="subview")/,
@@ -1095,6 +1102,7 @@ ${orgTreeHtml}
 ${companyIcon}
 <h4>${companyName}</h4><div class="loc">Plano ${plan}</div>
 <div class="count">${count} ${count === 1 ? 'colaborador' : 'colaboradores'}</div>
+${billingCta}
 </div>
 </div>
 <p class="muted" style="font-size:.8rem;margin-top:14px">Multiempresa (matriz + filiais no mesmo painel) ainda não está ativo — hoje cada empresa é um tenant isolado. Quando for habilitado, as outras empresas aparecem aqui.</p>
