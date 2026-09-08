@@ -31,6 +31,9 @@ export default function Setup2FAPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [successGlow, setSuccessGlow] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -121,7 +124,15 @@ export default function Setup2FAPage() {
         setVerifying(false);
         return;
       }
-      router.push('/dashboard');
+
+      // Sucesso — sequência de animação (mesma linguagem visual do /auth/verify):
+      // check dourado com anéis pulsando → glow no card → card sai → dashboard.
+      setSuccess(true);
+      setSuccessGlow(true);
+      setTimeout(() => {
+        setLeaving(true);
+        setTimeout(() => router.push('/dashboard'), 480);
+      }, 1400);
     } catch (err) {
       setError(`Erro: ${err instanceof Error ? err.message : String(err)}`);
       setVerifying(false);
@@ -188,7 +199,22 @@ export default function Setup2FAPage() {
         <Logo />
       </header>
       <div className="login-card-wrap">
-        <div className="login-card glass">
+        <div className={`login-card glass ${successGlow ? 'success-glow' : ''} ${leaving ? 'leaving' : ''}`}>
+
+        {success ? (
+          <div className="login-step active">
+            <div className="success-wrap">
+              <div className="success-icon gold pulse">
+                <div className="success-icon-ring" />
+                <div className="success-icon-ring-outer" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <h1 className="login-title">2FA ativado.</h1>
+              <p className="login-sub"><span className="spinner" aria-hidden="true" />&nbsp; Preparando seu painel...</p>
+            </div>
+          </div>
+        ) : (
+          <>
           <span className="login-eyebrow">Configuração obrigatória</span>
           <h1 className="login-title">Ative o 2FA</h1>
           <p className="login-sub">
@@ -200,13 +226,31 @@ export default function Setup2FAPage() {
             style={{
               display: 'flex',
               justifyContent: 'center',
-              padding: '20px 0',
+              padding: '20px',
               background: 'white',
               borderRadius: 12,
               margin: '16px 0',
             }}
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-          />
+          >
+            {qrSvg.trim().startsWith('<svg') ? (
+              // Supabase às vezes devolve o SVG cru
+              <span
+                style={{ width: 200, height: 200, display: 'block' }}
+                dangerouslySetInnerHTML={{ __html: qrSvg }}
+              />
+            ) : (
+              // ...e às vezes um data: URL (data:image/svg+xml;utf-8,<svg...>).
+              // Nesse caso, dangerouslySetInnerHTML jogava o texto do URL na
+              // tela — o "QR bugado". Renderiza como imagem.
+              <img
+                src={qrSvg}
+                alt="QR Code para configurar o 2FA"
+                width={200}
+                height={200}
+                style={{ display: 'block' }}
+              />
+            )}
+          </div>
 
           <details style={{ marginBottom: 16, color: 'var(--muted)', fontSize: '.85rem' }}>
             <summary style={{ cursor: 'pointer' }}>Não consegue escanear? Use a chave manual</summary>
@@ -256,6 +300,8 @@ export default function Setup2FAPage() {
           >
             Sair
           </button>
+          </>
+        )}
         </div>
       </div>
       </main>
