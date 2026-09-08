@@ -14,9 +14,23 @@ const LG = '[LG]';
 const EMAIL_DOMAIN = 'loadgen.fortixx.local';
 const JUNK_TENANT = '__LGX_TENANT__';
 
+const SIM = '[SIM]';
+
 const cleanup = `
 delete from auth.users where email like '%@${EMAIL_DOMAIN}';
+delete from auth.users where email like '%@sim.fortixx.local';
 delete from tenants where name=${q(JUNK_TENANT)};
+
+-- carga contínua do activity-sim (GitHub Actions) — marcada com [SIM] / SIM:
+delete from hr_messages where tenant_id=${q(TENANT)} and conversation_id in (select id from hr_conversations where subject like ${q(SIM + '%')});
+delete from hr_conversations where tenant_id=${q(TENANT)} and subject like ${q(SIM + '%')};
+delete from audit_logs where tenant_id=${q(TENANT)} and action like 'SIM:%';
+delete from notifications where tenant_id=${q(TENANT)} and title like ${q(SIM + '%')};
+delete from candidates where tenant_id=${q(TENANT)} and full_name like ${q(SIM + '%')};
+delete from documents where tenant_id=${q(TENANT)} and file_name like ${q(SIM + '%')};
+delete from schedules where tenant_id=${q(TENANT)} and profile_id in (select id from profiles where full_name like ${q(SIM + '%')});
+delete from profiles where tenant_id=${q(TENANT)} and full_name like ${q(SIM + '%')};
+
 delete from hr_messages where tenant_id=${q(TENANT)} and conversation_id in (select id from hr_conversations where subject like ${q(LG + '%')});
 delete from hr_conversations where tenant_id=${q(TENANT)} and subject like ${q(LG + '%')};
 delete from audit_logs where tenant_id=${q(TENANT)} and action like 'LG:%';

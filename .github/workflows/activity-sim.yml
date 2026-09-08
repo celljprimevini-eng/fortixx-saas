@@ -1,0 +1,39 @@
+name: activity-sim
+
+# Deixa o tenant demo "Fortixx" parecendo uma empresa usando o sistema 24h:
+# a cada ~30 min gera logins, candidaturas, documentos, conversas com o RH,
+# escalas, notificações e, de vez em quando, admissão/desligamento.
+# (cada tick cria de 3 a ~8 registros, então dá um fluxo constante.)
+#
+# Tudo marcado com [SIM] / SIM: e removível por `node scripts/clean-demo-load.mjs`.
+#
+# Para PAUSAR: Actions → activity-sim → "..." → Disable workflow.
+# Para rodar na hora: Actions → activity-sim → Run workflow.
+#
+# Secrets necessários (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL                = https://qgsbdwsqzmuxawiodjfr.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY   = (a mesma do .env.local / Vercel)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: activity-sim
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: run activity tick
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/activity-tick.mjs
