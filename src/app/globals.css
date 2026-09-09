@@ -127,6 +127,10 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
 .success-wrap { text-align: center; padding: 10px 0; }
 .success-icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(52,211,153,.14); display: grid; place-items: center; margin: 0 auto 18px; color: var(--green); }
 .success-icon svg { width: 28px; height: 28px; }
+
+/* QR Code do setup de 2FA — o <svg> vem do Supabase com tamanho próprio;
+   aqui forçamos 200x200 e centralizamos. */
+.qr-2fa svg { width: 200px; height: 200px; display: block; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin .7s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

@@ -222,35 +222,29 @@ export default function Setup2FAPage() {
             Depois, digite o código de 6 dígitos para confirmar.
           </p>
 
+          {/*
+            O Supabase (auth-js) SEMPRE devolve `qr_code` como
+            "data:image/svg+xml;utf-8,<svg...>" com o SVG CRU — sem
+            url-encode. Isso quebra num <img>: o `#` das cores é lido como
+            fragmento e corta o SVG (era o "QR bugado"). Solução: tirar o
+            prefixo do data URI e injetar o <svg> direto no DOM — SVG cru é
+            HTML válido e sempre renderiza. A classe .qr-2fa (globals.css)
+            força o tamanho.
+          */}
           <div
+            className="qr-2fa"
             style={{
               display: 'flex',
               justifyContent: 'center',
-              padding: '20px',
+              padding: 20,
               background: 'white',
               borderRadius: 12,
               margin: '16px 0',
             }}
-          >
-            {qrSvg.trim().startsWith('<svg') ? (
-              // Supabase às vezes devolve o SVG cru
-              <span
-                style={{ width: 200, height: 200, display: 'block' }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }}
-              />
-            ) : (
-              // ...e às vezes um data: URL (data:image/svg+xml;utf-8,<svg...>).
-              // Nesse caso, dangerouslySetInnerHTML jogava o texto do URL na
-              // tela — o "QR bugado". Renderiza como imagem.
-              <img
-                src={qrSvg}
-                alt="QR Code para configurar o 2FA"
-                width={200}
-                height={200}
-                style={{ display: 'block' }}
-              />
-            )}
-          </div>
+            dangerouslySetInnerHTML={{
+              __html: qrSvg.replace(/^data:image\/svg\+xml;(?:utf-8|charset=utf-8),/i, ''),
+            }}
+          />
 
           <details style={{ marginBottom: 16, color: 'var(--muted)', fontSize: '.85rem' }}>
             <summary style={{ cursor: 'pointer' }}>Não consegue escanear? Use a chave manual</summary>
