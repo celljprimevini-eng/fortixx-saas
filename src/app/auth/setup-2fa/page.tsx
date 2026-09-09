@@ -51,7 +51,7 @@ export default function Setup2FAPage() {
           return;
         }
 
-        // 2. Se já tem TOTP enrolled, redireciona direto pro dashboard
+        // 2. Se já tem TOTP verificado, redireciona direto pro dashboard
         const { data: factorsData } = await supabase.auth.mfa.listFactors();
         const hasVerifiedTotp = factorsData?.totp?.some((f) => f.status === 'verified');
         if (hasVerifiedTotp) {
@@ -59,16 +59,26 @@ export default function Setup2FAPage() {
           return;
         }
 
-        // 3. Enroll novo fator TOTP
+        // 2b. Remove fatores TOTP NÃO-verificados (setup anterior que foi
+        // abandonado: fechou a aba antes de confirmar o código). Sem isso, o
+        // enroll abaixo falha com "factor already exists" e a tela abre sem
+        // QR e sem chave manual — que foi exatamente o bug relatado.
+        const staleTotp = (factorsData?.totp ?? []).filter((f) => f.status !== 'verified');
+        for (const f of staleTotp) {
+          await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
+        }
+
+        // 3. Enroll novo fator TOTP. friendlyName único (timestamp) pra nunca
+        // colidir com um resquício que a limpeza acima não pegou.
         const { data, error: enrollError } = await supabase.auth.mfa.enroll({
           factorType: 'totp',
-          friendlyName: 'Fortixx',
+          friendlyName: `Fortixx ${Date.now()}`,
         });
 
         if (enrollError || !data) {
           console.error('[setup-2fa] enroll failed:', enrollError);
           if (mounted) {
-            setError(`Não foi possível gerar QR Code: ${enrollError?.message ?? 'erro desconhecido'}`);
+            setError(`Não foi possível gerar o QR Code: ${enrollError?.message ?? 'erro desconhecido'}. Tente recarregar a página.`);
             setLoading(false);
           }
           return;
@@ -179,7 +189,10 @@ export default function Setup2FAPage() {
               <span className="login-eyebrow">Erro</span>
               <h1 className="login-title">Setup 2FA</h1>
               <p className="login-sub" style={{ color: 'var(--red, #f87171)' }}>{error}</p>
-              <button onClick={handleLogout} className="btn btn-primary" style={{ marginTop: 16 }}>
+              <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ marginTop: 16 }}>
+                Tentar de novo
+              </button>
+              <button onClick={handleLogout} className="link-accent" style={{ marginTop: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
                 Voltar pro login
               </button>
             </div>
@@ -246,19 +259,27 @@ export default function Setup2FAPage() {
             }}
           />
 
-          <details style={{ marginBottom: 16, color: 'var(--muted)', fontSize: '.85rem' }}>
-            <summary style={{ cursor: 'pointer' }}>Não consegue escanear? Use a chave manual</summary>
-            <code style={{
-              display: 'block',
-              marginTop: 8,
-              padding: 8,
-              background: 'var(--bg-2)',
-              borderRadius: 6,
-              wordBreak: 'break-all',
-            }}>
-              {secret}
+          <div style={{ marginBottom: 16, fontSize: '.85rem' }}>
+            <p className="login-sub" style={{ margin: '0 0 6px' }}>
+              Não consegue escanear? Digite esta chave no app:
+            </p>
+            <code
+              onClick={() => { navigator.clipboard?.writeText(secret).catch(() => {}); }}
+              title="Clique para copiar"
+              style={{
+                display: 'block',
+                padding: 10,
+                background: 'var(--bg-2)',
+                borderRadius: 6,
+                wordBreak: 'break-all',
+                letterSpacing: '.08em',
+                cursor: 'pointer',
+                userSelect: 'all',
+              }}
+            >
+              {secret || '—'}
             </code>
-          </details>
+          </div>
 
           <form onSubmit={handleVerify}>
             <input
