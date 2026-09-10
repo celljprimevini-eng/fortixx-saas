@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * UM "tick" de atividade no tenant demo (00000000-...-0001, "Fortixx").
- * Roda a cada ~15 min pelo GitHub Actions (.github/workflows/activity-sim.yml)
+ * UM "tick" de atividade no tenant demo (00000000-...-0001, "FAST").
+ * Roda a cada ~30 min pelo GitHub Actions (.github/workflows/activity-sim.yml)
  * pra deixar o site parecendo uma empresa usando 24h: logins, candidaturas,
  * documentos, conversas com o RH, escalas, notificações ("e-mails") e, de vez
  * em quando, admissão / desligamento.
@@ -160,7 +160,7 @@ async function tick() {
     const email = `${slug(nm)}.${Math.random().toString(36).slice(2, 5)}@sim.fortixx.local`;
     const cu = await fetch(`${SB_URL}/auth/v1/admin/users`, {
       method: 'POST', headers: H,
-      body: JSON.stringify({ email, password: crypto.randomUUID(), email_confirm: true, user_metadata: { company_name: 'Fortixx' } }),
+      body: JSON.stringify({ email, password: crypto.randomUUID(), email_confirm: true, user_metadata: { company_name: 'FAST' } }),
     });
     if (cu.ok) {
       const uid = (await cu.json()).id;
