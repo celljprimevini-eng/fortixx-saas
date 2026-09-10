@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [burstDone, setBurstDone] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +27,10 @@ export default function RegisterPage() {
 
     if (password.length < 8) {
       setError('A senha precisa ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (!acceptedTerms) {
+      setError('É preciso aceitar os Termos e a Política de Privacidade.');
       return;
     }
 
@@ -38,7 +43,11 @@ export default function RegisterPage() {
       email,
       password,
       options: {
-        data: { company_name: companyName, full_name: fullName },
+        data: {
+          company_name: companyName,
+          full_name: fullName,
+          terms_accepted_at: new Date().toISOString(),
+        },
         emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`,
       },
     });
@@ -165,8 +174,22 @@ export default function RegisterPage() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
+                <label className="checkbox-row" style={{ marginTop: 16, alignItems: 'flex-start', fontSize: '.82rem', lineHeight: 1.5 }}>
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    style={{ marginTop: 2 }}
+                  />
+                  <span>
+                    Li e aceito os{' '}
+                    <a href="/termos" target="_blank" className="link-accent" style={{ display: 'inline' }}>Termos de Uso</a>{' '}
+                    e a{' '}
+                    <a href="/privacidade" target="_blank" className="link-accent" style={{ display: 'inline' }}>Política de Privacidade</a>.
+                  </span>
+                </label>
                 {error && <p className="error-text" role="alert">{error}</p>}
-                <button className="btn btn-primary" type="submit" disabled={loading}>
+                <button className="btn btn-primary" type="submit" disabled={loading || !acceptedTerms}>
                   {loading ? 'Criando conta…' : 'Criar conta →'}
                 </button>
               </form>
