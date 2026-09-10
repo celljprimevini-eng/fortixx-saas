@@ -1086,13 +1086,11 @@ ${orgTreeHtml}
     const companyName = escapeHtml(tenantRow?.name ?? 'Minha empresa');
     const plan = escapeHtml(tenantRow?.plan ?? '—');
     const count = (headcount ?? []).length;
-    const caktoEnabled = !!process.env.CAKTO_CHECKOUT_URL && !!process.env.CAKTO_WEBHOOK_SECRET;
-    const subActive = (tenantRow as any)?.subscription_status === 'active';
-    const billingCta = caktoEnabled && !subActive
-      ? '<button class="btn btn-gold" id="btnAssinarCakto" style="margin-top:12px">Assinar com cart&atilde;o (recorrente)</button>'
-      : caktoEnabled && subActive
-        ? '<span class="badge-active" style="margin-top:12px;display:inline-block">&#9679; Assinatura ativa</span>'
-        : '';
+    const subStatus = (tenantRow as any)?.subscription_status ?? 'trialing';
+    const subActive = subStatus === 'active';
+    const billingCta = subActive
+      ? '<span class="badge-active" style="margin-top:12px;display:inline-block">&#9679; Assinatura ativa</span>'
+      : `<button class="btn btn-gold" id="btnAssinarCakto" style="margin-top:12px">Assinar com cart&atilde;o (recorrente)</button><div class="muted" style="font-size:.75rem;margin-top:6px">${subStatus === 'past_due' ? 'Pagamento pendente &mdash; regularize pra n&atilde;o perder o acesso.' : 'Voc&ecirc; est&aacute; no per&iacute;odo de avalia&ccedil;&atilde;o.'}</div>`;
     const companyIcon = '<div class="company-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></div>';
     html = html.replace(
       /<div class="company-grid">[\s\S]*?<\/div>\s*<\/div>\s*(?=<div class="subview")/,

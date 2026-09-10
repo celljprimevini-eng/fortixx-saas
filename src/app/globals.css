@@ -315,3 +315,16 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
   .confirm-card, .confirm-check path, .confirm-check::before, .confirm-check::after { animation: none; }
   .confirm-check path { stroke-dashoffset: 0; }
 }
+
+/* ===== Páginas legais (/termos, /privacidade) ===== */
+.legal-wrap { max-width: 760px; margin: 0 auto; padding: 32px 22px 96px; position: relative; z-index: 2; }
+.legal-wrap h1 { font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 6px; }
+.legal-meta { color: var(--text-3, #999); font-size: .82rem; margin-bottom: 28px; }
+.legal-wrap h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 32px 0 10px; padding-top: 8px; }
+.legal-wrap h3 { font-size: .98rem; margin: 18px 0 6px; color: var(--text-1, #eee); }
+.legal-wrap p, .legal-wrap li { color: var(--text-2, rgba(240,240,240,.75)); font-size: .92rem; line-height: 1.65; }
+.legal-wrap ul { list-style: disc; padding-left: 22px; margin: 8px 0; }
+.legal-wrap li { margin: 4px 0; }
+.legal-wrap strong { color: var(--text-1, #fff); }
+.legal-callout { border: 1px solid var(--border, rgba(255,255,255,.12)); background: var(--surface, rgba(255,255,255,.04)); border-radius: 12px; padding: 14px 16px; margin: 18px 0; font-size: .88rem; }
+.legal-wrap a { color: var(--blue-light); }
