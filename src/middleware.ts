@@ -2,11 +2,61 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
+ * Rate limit por IP — janela deslizante de 1 min, in-memory no isolate do
+ * edge (best-effort, não substitui o WAF da Vercel). Serve pra cortar
+ * flood ingênuo / scraping ANTES de bater no Supabase e evitar susto de
+ * "40 mil requisições". Limites por classe de rota mais abaixo.
+ */
+const RL_BUCKETS = new Map<string, number[]>();
+function rateLimited(key: string, maxPerMin: number): boolean {
+  const now = Date.now();
+  const cutoff = now - 60_000;
+  const arr = (RL_BUCKETS.get(key) ?? []).filter((t) => t > cutoff);
+  arr.push(now);
+  RL_BUCKETS.set(key, arr);
+  if (RL_BUCKETS.size > 5000) {
+    for (const [k, v] of Array.from(RL_BUCKETS)) {
+      if (!v.some((t) => t > cutoff)) RL_BUCKETS.delete(k);
+    }
+  }
+  return arr.length > maxPerMin;
+}
+
+/**
  * Middleware: renova a sessão do Supabase a cada requisição e protege
  * as rotas do dashboard. Sem isso, a sessão expiraria silenciosamente
  * e o usuário seria "deslogado" sem explicação.
  */
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown';
+
+  // Público sem login → mais apertado (spam de candidatura, abuso do chat).
+  const isPublicApi =
+    path.startsWith('/api/recrutamento/apply') || path.startsWith('/api/hr-assistant');
+  const isWebhookApi =
+    path.startsWith('/api/stripe/webhook') ||
+    path.startsWith('/api/cakto/webhook') ||
+    path.startsWith('/api/webhooks/');
+  if (!isWebhookApi) {
+    const bucket = isPublicApi ? path : path.startsWith('/api/') ? 'api' : 'page';
+    const max = isPublicApi ? 12 : path.startsWith('/api/') ? 90 : 240;
+    if (rateLimited(`${ip}|${bucket}`, max)) {
+      return path.startsWith('/api/')
+        ? NextResponse.json(
+            { error: 'Muitas requisições. Aguarde um minuto.' },
+            { status: 429, headers: { 'retry-after': '60' } },
+          )
+        : new NextResponse('Muitas requisições. Aguarde um minuto.', {
+            status: 429,
+            headers: { 'retry-after': '60' },
+          });
+    }
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(

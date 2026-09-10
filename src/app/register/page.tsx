@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ConfirmBurst } from '@/components/ConfirmBurst';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [burstDone, setBurstDone] = useState(false);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +60,14 @@ export default function RegisterPage() {
   if (sent) {
     return (
       <main className="login-main">
+        {!burstDone && (
+          <ConfirmBurst
+            title="Conta criada!"
+            sub={`Empresa "${companyName}" pronta`}
+            duration={2000}
+            onDone={() => setBurstDone(true)}
+          />
+        )}
         <div className="login-card-wrap">
           <div className="login-card glass">
             <div className="login-step active">

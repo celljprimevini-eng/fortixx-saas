@@ -1,0 +1,28 @@
+# Fortixx RH
+# A landing pode ser indexada; o app, painéis e APIs não.
+
+User-agent: *
+Allow: /$
+Allow: /termos
+Allow: /privacidade
+Disallow: /dashboard
+Disallow: /api
+Disallow: /auth
+Disallow: /admin
+Disallow: /register
+
+# Scrapers de IA / treino de modelo — fora.
+User-agent: GPTBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: PerplexityBot
+Disallow: /
+
+Sitemap: https://fortixx-saas.vercel.app/sitemap.xml
