@@ -16,14 +16,23 @@
 // 'none' → 'self' e X-Frame-Options DENY → SAMEORIGIN, porque /dashboard
 // agora carrega /dashboard/platform num iframe same-origin — DENY
 // bloquearia o próprio dashboard novo.
+//
+// Ajustado em 2026-09-18: em produção 'unsafe-eval' → 'wasm-unsafe-eval'.
+// Quem precisava de eval era só o OCR (Tesseract.js compila WebAssembly no
+// worker); 'wasm-unsafe-eval' libera só isso. O `next dev` ainda usa eval,
+// por isso dev mantém 'unsafe-eval'. Próximo passo: nonce pra tirar o
+// 'unsafe-inline' (plano no vault: 60-ai/oficina/2026-09-18-plano-csp-fortixx).
 // ============================================================================
+const scriptEval =
+  process.env.NODE_ENV === 'production' ? "'wasm-unsafe-eval'" : "'unsafe-eval'";
+
 const securityHeaders = [
   // CSP — permite self + Supabase + Google Fonts + Stripe (sandbox iframe)
   {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      `script-src 'self' 'unsafe-inline' ${scriptEval} https://js.stripe.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.supabase.co",
