@@ -11,7 +11,7 @@ import { trainingProgressSchema } from '@/lib/validation/schemas';
  * (unique(training_id, profile_id) garante 1 linha por pessoa/treinamento).
  */
 export async function PATCH(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 

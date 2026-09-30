@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, candidateApprovedEmail } from '@/lib/resend/client';
@@ -11,8 +12,9 @@ import { sendEmail, candidateApprovedEmail } from '@/lib/resend/client';
  * Chamada quando RH/Admin move um candidato para o estágio "aprovado"
  * no Kanban de Pipeline.
  */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: candidate } = await admin
     .from('candidates')
     .select('*, job_openings(title, department_id)')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('tenant_id', actingProfile.tenant_id)
     .single();
 
@@ -39,35 +41,67 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Candidato não encontrado.' }, { status: 404 });
   }
 
-  // 1) Marca o candidato como aprovado
-  await admin.from('candidates').update({ stage: 'aprovado' }).eq('id', candidate.id);
-
-  // 2) Cria o acesso (usuário no Supabase Auth) com senha temporária
-  const { data: newUser, error: createUserError } = await admin.auth.admin.createUser({
-    email: candidate.email,
-    email_confirm: true,
-    user_metadata: { full_name: candidate.full_name },
-  });
-  if (createUserError || !newUser.user) {
-    return NextResponse.json({ error: 'Falha ao criar acesso do colaborador.' }, { status: 500 });
+  if (candidate.stage === 'aprovado') {
+    return NextResponse.json({ error: 'Candidato já foi aprovado.' }, { status: 409 });
   }
 
-  // 3) Cria o profile vinculado ao MESMO tenant (não cria empresa nova aqui —
-  //    diferente do signup inicial, que cria tenant + admin)
-  await admin.from('profiles').insert({
-    id: newUser.user.id,
-    tenant_id: actingProfile.tenant_id,
-    full_name: candidate.full_name,
-    email: candidate.email,
-    role: 'colaborador',
-    job_title: (candidate.job_openings as any)?.title,
-    department_id: (candidate.job_openings as any)?.department_id,
-  });
+  // 1) Cria o acesso JÁ vinculado ao tenant de quem aprovou, como colaborador.
+  //    Antes usava auth.admin.createUser + insert em profiles: o trigger de
+  //    signup (handle_new_user) já criava uma empresa nova com o candidato como
+  //    ADMIN, o insert do profile falhava por chave duplicada (erro ignorado) e
+  //    o aprovado ia parar sozinho, como admin, numa "Minha Empresa". A RPC
+  //    provision_user_tenant faz tudo numa transação e move o perfil pro tenant
+  //    certo. A senha é aleatória e descartada — o colaborador define a dele
+  //    pelo link de recuperação enviado no passo 4.
+  type ProvisionResult = { user_id: string; tenant_id: string; email: string; role: string };
+  type AdminRpc = {
+    rpc(fn: 'provision_user_tenant', params: {
+      p_email: string;
+      p_password: string;
+      p_full_name: string;
+      p_company_name: string | null;
+      p_existing_tenant_id: string;
+      p_role: 'colaborador';
+    }): Promise<{ data: ProvisionResult[] | null; error: { message: string } | null }>;
+  };
+  const { data: provisioned, error: provisionError } = await (admin as unknown as AdminRpc).rpc(
+    'provision_user_tenant',
+    {
+      p_email: candidate.email,
+      p_password: `${randomUUID()}${randomUUID()}`,
+      p_full_name: candidate.full_name,
+      p_company_name: null,
+      p_existing_tenant_id: actingProfile.tenant_id,
+      p_role: 'colaborador',
+    },
+  );
+  const newUserId = provisioned?.[0]?.user_id;
+  if (provisionError || !newUserId) {
+    const exists = provisionError?.message.includes('já existe');
+    console.error(`[approve] provision falhou candidate=${candidate.id} error=${provisionError?.message}`);
+    return NextResponse.json(
+      {
+        error: exists
+          ? 'Já existe um usuário com o e-mail deste candidato.'
+          : 'Falha ao criar acesso do colaborador.',
+      },
+      { status: exists ? 409 : 500 },
+    );
+  }
 
-  // 4) Inicia o onboarding com checklist padrão
+  const job = candidate.job_openings as { title?: string | null; department_id?: string | null } | null;
+  await admin
+    .from('profiles')
+    .update({ job_title: job?.title ?? null, department_id: job?.department_id ?? null })
+    .eq('id', newUserId);
+
+  // 2) Só marca como aprovado depois que o acesso existe de fato.
+  await admin.from('candidates').update({ stage: 'aprovado' }).eq('id', candidate.id);
+
+  // 3) Inicia o onboarding com checklist padrão
   const { data: onboarding } = await admin
     .from('onboardings')
-    .insert({ tenant_id: actingProfile.tenant_id, profile_id: newUser.user.id, candidate_id: candidate.id })
+    .insert({ tenant_id: actingProfile.tenant_id, profile_id: newUserId, candidate_id: candidate.id })
     .select()
     .single();
 
@@ -78,11 +112,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     'Configurar acessos de sistema',
     'Reunião com gestor direto',
   ];
-  await admin.from('onboarding_tasks').insert(
-    defaultTasks.map((title, i) => ({ onboarding_id: onboarding!.id, title, order_index: i }))
-  );
+  if (onboarding) {
+    await admin.from('onboarding_tasks').insert(
+      defaultTasks.map((title, i) => ({ onboarding_id: onboarding.id, title, order_index: i }))
+    );
+  }
 
-  // 5) Gera link de definição de senha e envia e-mail automático
+  // 4) Gera link de definição de senha e envia e-mail automático
   const { data: linkData } = await admin.auth.admin.generateLink({
     type: 'recovery',
     email: candidate.email,
@@ -98,7 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   return NextResponse.json({
     success: true,
-    profile_id: newUser.user.id,
+    profile_id: newUserId,
     email_sent: !('skipped' in emailResult || 'error' in emailResult),
   });
 }

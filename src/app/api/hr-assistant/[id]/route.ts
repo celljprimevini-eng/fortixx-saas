@@ -9,8 +9,9 @@ import { hrConversationUpdateSchema } from '@/lib/validation/schemas';
  * das subtabs Histórico / Escalonamento. Exige role admin/rh no MESMO tenant
  * da thread (mesmo padrão de api/interviews/[id]).
  */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: conv } = await admin
     .from('hr_conversations')
     .select('id, tenant_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!conv || conv.tenant_id !== actingProfile.tenant_id) {
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { error } = await admin
     .from('hr_conversations')
     .update({ status: parsed.data.status })
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: 'Falha ao atualizar conversa.' }, { status: 500 });

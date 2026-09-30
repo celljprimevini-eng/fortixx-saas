@@ -11,8 +11,9 @@ import type { Database } from '@/types/database';
  * unicamente em rotas que precisam bypassar RLS de propósito
  * (ex.: portal público de candidaturas, webhooks).
  */
-export function createClient() {
-  const cookieStore = cookies();
+export async function createClient() {
+  // Next 15: cookies() é assíncrono.
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

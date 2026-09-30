@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardFrame from '@/components/dashboard/DashboardFrame';
+import { isBlockedByPaywall } from '@/lib/billing';
 
 /**
  * Dashboard real: autentica, busca os KPIs no Supabase (isolados por tenant via
@@ -8,7 +9,7 @@ import DashboardFrame from '@/components/dashboard/DashboardFrame';
  * RH completa (protótipo validado pela Renata) num iframe já com esses números.
  */
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
@@ -26,6 +27,9 @@ export default async function DashboardPage() {
     redirect('/auth/login');
   }
 
+  const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants;
+  if (isBlockedByPaywall(tenant)) redirect('/assinatura');
+
   const tenantId = profile.tenant_id;
 
   const [
@@ -41,8 +45,6 @@ export default async function DashboardPage() {
     supabase.from('onboardings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'em_andamento'),
     supabase.from('documents').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('approval_status', 'pending'),
   ]);
-
-  const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants;
 
   return (
     <DashboardFrame

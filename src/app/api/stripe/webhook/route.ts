@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe/client';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, paymentFailedEmail } from '@/lib/resend/client';
@@ -19,7 +18,7 @@ import Stripe from 'stripe';
  */
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const signature = headers().get('stripe-signature')!;
+  const signature = req.headers.get('stripe-signature') ?? '';
 
   let event: Stripe.Event;
   try {

@@ -32,7 +32,7 @@ const WINDOW_MS = 60_000;
 
 export async function POST(req: NextRequest) {
   // 1. Validação do caller (deve ser admin do tenant fundador)
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });

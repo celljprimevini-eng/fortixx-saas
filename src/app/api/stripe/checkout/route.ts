@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { stripe, STRIPE_PRICES } from '@/lib/stripe/client';
 
 /**
@@ -7,25 +8,29 @@ import { stripe, STRIPE_PRICES } from '@/lib/stripe/client';
  * assinar um plano. Chamada pelo botão "Começar agora" da página de Planos.
  */
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
 
-  const { plan } = (await req.json()) as { plan: keyof typeof STRIPE_PRICES };
-  if (!STRIPE_PRICES[plan]) {
+  const body = (await req.json().catch(() => null)) as { plan?: string } | null;
+  const plan = body?.plan as keyof typeof STRIPE_PRICES | undefined;
+  if (!plan || !Object.prototype.hasOwnProperty.call(STRIPE_PRICES, plan) || !STRIPE_PRICES[plan]) {
     return NextResponse.json({ error: 'Plano inválido.' }, { status: 400 });
   }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, tenants(stripe_customer_id, name)')
+    .select('tenant_id, role, tenants(stripe_customer_id, name)')
     .eq('id', user.id)
     .single();
 
   if (!profile) {
     return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 });
+  }
+  if (profile.role !== 'admin') {
+    return NextResponse.json({ error: 'Apenas o admin da empresa pode assinar.' }, { status: 403 });
   }
 
   // Cria (ou reaproveita) o Customer no Stripe
@@ -37,7 +42,8 @@ export async function POST(req: NextRequest) {
       metadata: { tenant_id: profile.tenant_id },
     });
     customerId = customer.id;
-    await supabase
+    // Colunas de cobrança só são graváveis pelo backend (migration 0013).
+    await createAdminClient()
       .from('tenants')
       .update({ stripe_customer_id: customerId })
       .eq('id', profile.tenant_id);

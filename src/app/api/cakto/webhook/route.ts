@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, paymentFailedEmail } from '@/lib/resend/client';
 import {
@@ -25,7 +24,7 @@ export const runtime = 'nodejs';
  */
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
-  const h = headers();
+  const h = req.headers;
 
   let payload: any;
   try {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { BILLING_ENFORCED, isBlockedByPaywall } from '@/lib/billing';
 import { platformStyle } from '../_platform/style';
 import { platformBody } from '../_platform/body';
 import { platformScript } from '../_platform/script';
@@ -52,7 +53,11 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#39;')
+    // O HTML é montado com String.replace(regex, `$1${dados}$2`): um "$'",
+    // "$`" ou "$&" num nome vindo do portal público de candidaturas seria
+    // interpretado como padrão de substituição e duplicaria pedaços da página.
+    .replace(/\$/g, '&#36;');
 }
 
 function initials(name: string): string {
@@ -228,8 +233,8 @@ function applyRoleVisibility(fullHtml: string, role: Role): string {
   return out;
 }
 
-export async function GET() {
-  const supabase = createClient();
+export async function GET(req: Request) {
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   let html = `<!DOCTYPE html>
@@ -271,6 +276,17 @@ ${platformBody}
     return new NextResponse(html, {
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
     });
+  }
+
+  if (BILLING_ENFORCED) {
+    const { data: billing } = await supabase
+      .from('tenants')
+      .select('subscription_status, trial_ends_at')
+      .eq('id', tenantId)
+      .single();
+    if (isBlockedByPaywall(billing)) {
+      return NextResponse.redirect(new URL('/assinatura', req.url));
+    }
   }
 
   const role = (profile?.role ?? 'colaborador') as Role;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
@@ -8,13 +9,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * usuário, porque quem chama é o n8n, não uma pessoa.
  */
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('X-Webhook-Secret');
-  if (secret !== process.env.N8N_WEBHOOK_SECRET) {
+  const expected = process.env.N8N_WEBHOOK_SECRET;
+  const secret = req.headers.get('X-Webhook-Secret') ?? '';
+  if (!expected || !safeEqual(secret, expected)) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
   const supabase = createAdminClient();
-  const payload = await req.json();
+  const payload = await req.json().catch(() => null);
+  if (!payload || typeof payload !== 'object') {
+    return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
+  }
 
   switch (payload.type) {
     case 'resume_parsed': {
@@ -48,4 +53,10 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
 }

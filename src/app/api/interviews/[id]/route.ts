@@ -9,8 +9,9 @@ import { interviewUpdateSchema } from '@/lib/validation/schemas';
  * api/onboarding-tasks/[id]: exige role admin/rh no MESMO tenant da
  * entrevista.
  */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -35,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: interview } = await admin
     .from('interviews')
     .select('id, tenant_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!interview || interview.tenant_id !== actingProfile.tenant_id) {
@@ -49,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { error } = await admin
     .from('interviews')
     .update(update)
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: 'Falha ao atualizar entrevista.' }, { status: 500 });

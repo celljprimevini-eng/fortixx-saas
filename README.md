@@ -8,7 +8,7 @@ de parsing de currículo via n8n.
 
 | Camada | Tecnologia |
 |---|---|
-| Front-end + Back-end | Next.js 14 (App Router), TypeScript |
+| Front-end + Back-end | Next.js 15 (App Router), React 19, TypeScript |
 | Banco de dados | Supabase (PostgreSQL + Row Level Security) |
 | Autenticação | Supabase Auth (e-mail/senha + 2FA/TOTP real) |
 | Pagamentos | Stripe (Checkout + assinaturas recorrentes) |
@@ -110,9 +110,11 @@ cancelamento e falha de pagamento são todos tratados.
   em cima desta base quando o material de referência aparecer.
 - **Página de preços pública**: idem — hoje o checkout é via
   `/api/stripe/checkout`; falta uma `/pricing` com cards comparativos.
-- **OCR real de documentos**: hoje o schema e a rota de upload existem,
-  mas a extração de texto de RG/CPF/comprovante ainda não está conectada
-  a um serviço de OCR (Tesseract.js, Google Vision, ou AWS Textract).
+- **Paywall ligado**: o bloqueio de empresas sem assinatura ativa está
+  pronto (`src/lib/billing.ts` → `/assinatura`), mas só age com
+  `BILLING_ENFORCED=true` na Vercel. Confira o status do tenant demo antes.
+- **Painel `/admin` (editar landing)**: a tela existe, mas `saveSiteConfig`
+  ainda não grava nada e a landing não lê `site_config`.
 - **Módulos de Escalas, Analytics e Configurações**: schema e RLS prontos
   no banco; as telas React ainda não foram construídas.
 
@@ -134,11 +136,12 @@ src/
     supabase/        → clientes (browser, server, admin)
     stripe/          → cliente Stripe
     resend/          → cliente de e-mail
-  middleware.ts      → refresh de sessão + proteção de rotas
+  middleware.ts      → refresh de sessão + proteção de rotas + 2FA obrigatório (aal2)
   types/database.ts  → tipos TypeScript do schema (sincronizar com `npm run db:types`)
 supabase/
   migrations/        → schema versionado
   seed.sql           → dados de demonstração para desenvolvimento local
+  tests/rls/         → teste de segurança das policies num Postgres local
 n8n/workflows/       → automação de parsing de currículo
 scripts/             → setup.js, stripe-setup.js, vercel-env-sync.js
 ```
@@ -152,4 +155,5 @@ npm run lint            # ESLint
 npx tsc --noEmit         # checagem de tipos
 npm run db:migrate       # aplica migrations no Supabase linkado
 npm run db:types         # regenera src/types/database.ts a partir do banco real
+PGHOST=/tmp PGUSER=postgres ./supabase/tests/rls/run.sh   # testa RLS/2FA/billing num Postgres LOCAL
 ```

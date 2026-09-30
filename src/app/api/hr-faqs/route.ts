@@ -10,7 +10,7 @@ import { hrFaqCreateSchema } from '@/lib/validation/schemas';
  * Exige role admin/rh (tabela hr_faqs, policy hr_faqs_write_admin_rh).
  */
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 

@@ -114,23 +114,42 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isDashboardRoute && !user) {
+  // /admin e /assinatura também são área logada (o /admin só checava no client).
+  const isProtectedPage =
+    isDashboardRoute || path.startsWith('/admin') || path.startsWith('/assinatura');
+
+  if (isProtectedPage && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     url.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
-  // Enforça o challenge de 2FA no servidor: sem isso, um usuário com fator
-  // TOTP cadastrado mas ainda não verificado nesta sessão (AAL1) conseguia
-  // pular /auth/verify navegando direto pra /dashboard pela URL — o
-  // redirect da rota de login era só uma sugestão pro client, não uma
-  // barreira real.
-  if (isDashboardRoute && user) {
+  // 2FA obrigatório de verdade, no servidor. Sessão só com senha (aal1) não
+  // entra na área logada nem usa a API autenticada:
+  //  - tem fator TOTP mas não fez o challenge nesta sessão → /auth/verify
+  //  - nunca cadastrou fator → /auth/setup-2fa (antes, quem pulava o setup
+  //    digitando /dashboard na URL entrava sem 2FA nenhum, e a API aceitava
+  //    sessão aal1 em todas as rotas)
+  // O banco reforça a mesma regra (policies require_aal2, migration 0013) —
+  // este bloqueio é a primeira camada, não a única.
+  const isAuthedApi =
+    isApiRoute &&
+    !isWebhookApi &&
+    !path.startsWith('/api/auth/') &&
+    !path.startsWith('/api/recrutamento/apply');
+  if (user && (isProtectedPage || isAuthedApi)) {
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+    if (aal?.currentLevel !== 'aal2') {
+      if (isAuthedApi) {
+        return NextResponse.json(
+          { error: 'Verificação em duas etapas pendente.' },
+          { status: 403 },
+        );
+      }
       const url = request.nextUrl.clone();
-      url.pathname = '/auth/verify';
+      url.pathname = aal?.nextLevel === 'aal2' ? '/auth/verify' : '/auth/setup-2fa';
+      url.search = '';
       return NextResponse.redirect(url);
     }
   }
