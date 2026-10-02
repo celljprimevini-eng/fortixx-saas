@@ -18,25 +18,47 @@ import { parseResume } from '@/lib/recrutamento/parse-resume';
  */
 export const maxDuration = 30;
 
+const RESUME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const formData = await req.formData();
 
-  const jobOpeningId = formData.get('job_opening_id') as string;
-  const fullName = formData.get('full_name') as string;
-  const email = formData.get('email') as string;
-  const phone = formData.get('phone') as string;
-  const resumeFile = formData.get('resume') as File | null;
+  const field = (name: string, max: number) => String(formData.get(name) ?? '').trim().slice(0, max);
+  const jobOpeningId = field('job_opening_id', 64);
+  const fullName = field('full_name', 200);
+  const email = field('email', 254).toLowerCase();
+  const phone = field('phone', 40);
+  const resumeEntry = formData.get('resume');
+  const resumeFile = resumeEntry instanceof File ? resumeEntry : null;
 
   if (!jobOpeningId || !fullName || !email) {
     return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
+  }
+  if (resumeFile && resumeFile.size > 0 && !RESUME_TYPES.includes(resumeFile.type)) {
+    return NextResponse.json(
+      { error: 'Formato de currículo não suportado (use PDF, DOC, DOCX, JPG ou PNG).' },
+      { status: 400 },
+    );
   }
 
   const { data: job } = await supabase
     .from('job_openings')
     .select('tenant_id')
     .eq('id', jobOpeningId)
-    .single();
+    .eq('status', 'open')
+    .eq('is_public', true)
+    .maybeSingle();
 
   if (!job) {
     return NextResponse.json({ error: 'Vaga não encontrada.' }, { status: 404 });
@@ -73,8 +95,8 @@ export async function POST(req: NextRequest) {
       tenant_id: job.tenant_id,
       job_opening_id: jobOpeningId,
       full_name: fullName,
-      email: parsed?.email || email,
-      phone: parsed?.phone || phone,
+      email, // o e-mail digitado vale mais que o extraído do currículo
+      phone: phone || parsed?.phone || null,
       resume_url: resumeUrl,
       resume_raw_text: parsed?.raw_text || null,
       extracted_skills: parsed?.skills?.length ? parsed.skills : null,

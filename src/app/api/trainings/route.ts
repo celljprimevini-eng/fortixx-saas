@@ -14,7 +14,7 @@ import { trainingCreateSchema } from '@/lib/validation/schemas';
  * Só leitura nesta passada — criar treinamento fica pra depois.
  */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -66,7 +66,7 @@ export async function GET() {
  * trainings_write_admin_rh).
  */
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 

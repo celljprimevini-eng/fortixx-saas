@@ -8,8 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * candidates.stage = 'reprovado'. Mesma checagem de auth+role+tenant do
  * approve, pra manter o mesmo nível de proteção.
  */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: candidate } = await admin
     .from('candidates')
     .select('id')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('tenant_id', actingProfile.tenant_id)
     .single();
 

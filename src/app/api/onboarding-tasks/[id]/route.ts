@@ -10,8 +10,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * time de RH, não o próprio colaborador em onboarding (que ainda nem tem
  * necessariamente acesso à Plataforma de RH).
  */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -43,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: task } = await admin
     .from('onboarding_tasks')
     .select('id, onboarding_id, onboardings!inner(tenant_id)')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   const taskTenantId = (task as any)?.onboardings?.tenant_id
@@ -56,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { error } = await admin
     .from('onboarding_tasks')
     .update({ done: body.done, done_at: body.done ? new Date().toISOString() : null })
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: 'Falha ao atualizar tarefa.' }, { status: 500 });

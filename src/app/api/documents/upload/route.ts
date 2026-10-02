@@ -27,7 +27,7 @@ const CATEGORIES = ['identidade', 'comprovante', 'contrato', 'curriculo', 'outro
 type Categoria = (typeof CATEGORIES)[number];
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
 
@@ -108,14 +108,10 @@ export async function POST(req: NextRequest) {
   if (upErr) {
     console.error('[documents/upload] storage falhou:', upErr);
     return NextResponse.json(
-      { error: 'Falha ao salvar o arquivo.', detail: upErr.message },
+      { error: 'Falha ao salvar o arquivo.' },
       { status: 500 }
     );
   }
-
-  const { data: signed } = await admin.storage
-    .from('documents')
-    .createSignedUrl(path, 60 * 60 * 24 * 30);
 
   const { data: created, error: insErr } = await admin
     .from('documents')
@@ -123,7 +119,10 @@ export async function POST(req: NextRequest) {
       tenant_id: profile.tenant_id,
       profile_id: profileId,
       file_name: safeName,
-      file_url: signed?.signedUrl ?? path,
+      // Guarda o caminho no bucket, não uma URL assinada: a URL expirava em
+      // 30 dias e, enquanto valia, dava acesso ao documento a quem a tivesse.
+      // Quem for exibir gera um link curto na hora (createSignedUrl).
+      file_url: path,
       file_size_bytes: file.size,
       category,
       ocr_status: ocrStatus,

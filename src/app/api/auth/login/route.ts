@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Sign-in via Supabase (server client lê cookies, vai setar os cookies de sessão)
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
   if (signInError) {

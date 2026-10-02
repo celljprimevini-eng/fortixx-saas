@@ -18,7 +18,7 @@ export async function POST(_req: NextRequest) {
     );
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -28,12 +28,15 @@ export async function POST(_req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, tenants(name)')
+    .select('tenant_id, role, tenants(name)')
     .eq('id', user.id)
     .single();
 
   if (!profile) {
     return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 });
+  }
+  if (profile.role !== 'admin') {
+    return NextResponse.json({ error: 'Apenas o admin da empresa pode assinar.' }, { status: 403 });
   }
 
   const url = buildCaktoCheckoutUrl({
