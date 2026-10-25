@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       metadata: { tenant_id: profile.tenant_id },
     });
     customerId = customer.id;
-    // Colunas de cobrança só são graváveis pelo backend (migration 0013).
+    // Colunas de cobrança só são graváveis pelo backend (migration 0014).
     await createAdminClient()
       .from('tenants')
       .update({ stripe_customer_id: customerId })

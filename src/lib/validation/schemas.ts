@@ -140,3 +140,95 @@ export const checkoutSchema = z.object({
   success_url: z.string().url().optional(),
   cancel_url: z.string().url().optional(),
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Mural (feed, comunicados, enquetes)
+// ────────────────────────────────────────────────────────────────────────────
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data no formato AAAA-MM-DD');
+
+export const muralCreateSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('post'),
+    body: z.string().trim().min(1).max(4000),
+    comunicado: z.boolean().optional().default(false),
+  }),
+  z.object({
+    type: z.literal('poll'),
+    question: z.string().trim().min(3).max(300),
+    options: z.array(z.string().trim().min(1).max(120)).min(2).max(8),
+    anonymous: z.boolean().optional().default(false),
+    closes_at: z.string().datetime().nullable().optional(),
+  }),
+  z.object({
+    type: z.literal('parabens'),
+    subject_profile_id: z.string().uuid(),
+    body: z.string().trim().min(1).max(500),
+  }),
+]);
+
+export const postActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('react') }),
+  z.object({ action: z.literal('comment'), body: z.string().trim().min(1).max(1000) }),
+  z.object({ action: z.literal('pin'), pinned: z.boolean() }),
+]);
+
+export const pollVoteSchema = z.object({ option_id: z.string().uuid() });
+
+export const birthDateSchema = z.object({ birth_date: isoDate.nullable() });
+
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Autoatendimento (férias, solicitações, eventos, assinatura)
+// ────────────────────────────────────────────────────────────────────────────
+
+export const autoatendimentoCreateSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('ferias'),
+    kind: z.enum(['ferias', 'folga', 'licenca']).default('ferias'),
+    start_date: isoDate,
+    end_date: isoDate,
+    note: z.string().trim().max(1000).optional(),
+  }),
+  z.object({
+    type: z.literal('solicitacao'),
+    category: z.enum(['documento', 'beneficio', 'dados_cadastrais', 'holerite', 'ponto', 'outro']),
+    subject: z.string().trim().min(3).max(160),
+    body: z.string().trim().min(1).max(4000),
+  }),
+  z.object({
+    type: z.literal('evento'),
+    title: z.string().trim().min(3).max(160),
+    description: z.string().trim().max(4000).optional(),
+    location: z.string().trim().max(200).optional(),
+    starts_at: z.string().datetime(),
+    ends_at: z.string().datetime().nullable().optional(),
+    capacity: z.number().int().positive().max(100000).nullable().optional(),
+  }),
+  z.object({
+    type: z.literal('assinatura'),
+    title: z.string().trim().min(3).max(160),
+    content: z.string().trim().min(1).max(20000),
+    /** Lista de quem assina. Vazio/ausente = todos os colaboradores ativos. */
+    profile_ids: z.array(z.string().uuid()).max(2000).optional(),
+  }),
+]);
+
+export const leaveDecisionSchema = z.object({
+  status: z.enum(['approved', 'rejected', 'canceled']),
+  decision_note: z.string().trim().max(1000).optional(),
+});
+
+export const serviceRequestUpdateSchema = z.object({
+  status: z.enum(['open', 'in_progress', 'done', 'rejected']),
+  response: z.string().trim().max(4000).optional(),
+});
+
+export const signatureActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('sign'), signed_name: z.string().trim().min(3).max(160) }),
+  z.object({ action: z.literal('decline') }),
+]);

@@ -1,5 +1,5 @@
 -- ============================================================================
--- 0013 — HARDENING DE SEGURANÇA (auditoria de 2026-09-30)
+-- 0014 — HARDENING DE SEGURANÇA (auditoria de 2026-09-30)
 -- ============================================================================
 -- Fecha os furos encontrados na auditoria. Todos foram reproduzidos num
 -- Postgres local com os stubs do Supabase antes da correção:

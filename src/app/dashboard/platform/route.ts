@@ -4,6 +4,14 @@ import { BILLING_ENFORCED, isBlockedByPaywall } from '@/lib/billing';
 import { platformStyle } from '../_platform/style';
 import { platformBody } from '../_platform/body';
 import { platformScript } from '../_platform/script';
+import { MODULE_DOCK_ITEMS, MODULE_VIEWS, MODULE_STYLE, MODULE_VIEW_IDS } from '../_platform/modules';
+
+// Mural + Autoatendimento: encaixados no protótipo (ver _platform/modules.ts).
+const DOCK_ANCHOR = '<button class="dock-item" data-view="view-analytics"';
+const VIEW_ANCHOR = '<section class="view" id="view-analytics">';
+const platformBodyWithModules = platformBody
+  .replace(DOCK_ANCHOR, MODULE_DOCK_ITEMS.trim() + '\n      ' + DOCK_ANCHOR)
+  .replace(VIEW_ANCHOR, MODULE_VIEWS.trim() + '\n\n    ' + VIEW_ANCHOR);
 
 /**
  * Serve o dashboard "Plataforma de RH" completo (o protótipo fortixx-plataforma.html
@@ -169,16 +177,17 @@ type Role = 'admin' | 'rh' | 'gestor' | 'colaborador';
 
 const DOCK_VIEW_ACCESS: Record<Role, readonly string[]> = {
   // Nível 1/4 — "Total" ou "Visualizar" em todas as linhas da matriz.
-  admin: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics', 'view-config'],
+  admin: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', ...MODULE_VIEW_IDS, 'view-analytics', 'view-config'],
   // Nível 2/4 — matriz dá "Editar"/"Visualizar" em tudo, "Sem acesso" só em Configurações.
-  rh: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics'],
+  rh: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', ...MODULE_VIEW_IDS, 'view-analytics'],
   // Nível 3/4 — igual RH em módulos (Visualizar/Equipe), "Sem acesso" em Configurações.
-  gestor: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics'],
+  gestor: ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', ...MODULE_VIEW_IDS, 'view-analytics'],
   // Nível 4/4 — matriz dá "Sem acesso" pra Recrutamento, Analytics e Configurações.
-  colaborador: ['view-inicio', 'view-colaboradores', 'view-onboarding', 'view-assistente'],
+  // Mural e Autoatendimento existem justamente pro colaborador: todos os papéis veem.
+  colaborador: ['view-inicio', 'view-colaboradores', 'view-onboarding', 'view-assistente', ...MODULE_VIEW_IDS],
 };
 
-const ALL_DOCK_VIEWS = ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', 'view-analytics', 'view-config'] as const;
+const ALL_DOCK_VIEWS = ['view-inicio', 'view-colaboradores', 'view-recrutamento', 'view-onboarding', 'view-assistente', ...MODULE_VIEW_IDS, 'view-analytics', 'view-config'] as const;
 
 // Subtabs de Configurações: só admin chega aqui (ver comentário acima), e a
 // matriz original dá "Total" pra admin em Configurações — ou seja, todas as
@@ -250,12 +259,13 @@ export async function GET(req: Request) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>${platformStyle}</style>
+<style>${platformStyle}${MODULE_STYLE}</style>
 </head>
 <body>
-${platformBody}
+${platformBodyWithModules}
 <script src="/tesseract/tesseract.min.js"></script>
 <script>${platformScript}</script>
+<script src="/fortixx-modules.js" defer></script>
 </body>
 </html>`;
 
@@ -293,7 +303,10 @@ ${platformBody}
 
   // Injeta o tenant_id do usuário logado no <body>, pro script.ts poder mandar
   // como existing_tenant_id ao chamar api/onboarding (ver comentário no topo).
-  html = html.replace('<body>', `<body data-tenant-id="${escapeHtml(tenantId)}">`);
+  html = html.replace(
+    '<body>',
+    `<body data-tenant-id="${escapeHtml(tenantId)}" data-user-id="${escapeHtml(user.id)}" data-role="${escapeHtml(role)}">`,
+  );
 
   // Camada visual da matriz de permissões (dock + subtabs de Configurações).
   // Ver comentário em applyRoleVisibility/DOCK_VIEW_ACCESS acima.

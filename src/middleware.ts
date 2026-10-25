@@ -131,7 +131,7 @@ export async function middleware(request: NextRequest) {
   //  - nunca cadastrou fator → /auth/setup-2fa (antes, quem pulava o setup
   //    digitando /dashboard na URL entrava sem 2FA nenhum, e a API aceitava
   //    sessão aal1 em todas as rotas)
-  // O banco reforça a mesma regra (policies require_aal2, migration 0013) —
+  // O banco reforça a mesma regra (policies require_aal2, migrations 0014/0015) —
   // este bloqueio é a primeira camada, não a única.
   const isAuthedApi =
     isApiRoute &&

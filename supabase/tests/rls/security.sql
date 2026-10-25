@@ -106,3 +106,36 @@ begin; set local role service_role;
        reset role;
        select 'L11 provision (tenant existente)       : ' || p.role || ' mesmo_tenant=' || (p.tenant_id = (select tenant_id from profiles where id = '00000000-0000-0000-0000-0000000000a1'))::text || ' tenants_orfaos=' || (select count(*) from tenants t2 where not exists (select 1 from profiles p2 where p2.tenant_id = t2.id))
        from profiles p where p.email = 'conv@a.com'; rollback;
+
+-- ============================================================================
+-- MURAL / AUTOATENDIMENTO (0013_mural + 0015_mural_hardening)
+-- ============================================================================
+-- Semente (como postgres, fora de transação): 1 post e 2 enquetes na empresa A.
+--   enquete "anon"  (anônima):    c1 e r1 votaram
+--   enquete "aberta" (não anôn.): c1 votou
+insert into posts (id, tenant_id, author_id, body)
+  values ('00000000-0000-0000-0000-00000000f001', :A, '00000000-0000-0000-0000-0000000000a1', 'comunicado da empresa A');
+insert into polls (id, tenant_id, author_id, question, anonymous) values
+  ('00000000-0000-0000-0000-00000000f101', :A, '00000000-0000-0000-0000-0000000000a1', 'Enquete anonima?', true),
+  ('00000000-0000-0000-0000-00000000f102', :A, '00000000-0000-0000-0000-0000000000a1', 'Enquete aberta?', false);
+insert into poll_options (id, poll_id, tenant_id, label) values
+  ('00000000-0000-0000-0000-00000000f201', '00000000-0000-0000-0000-00000000f101', :A, 'sim'),
+  ('00000000-0000-0000-0000-00000000f202', '00000000-0000-0000-0000-00000000f102', :A, 'sim');
+insert into poll_votes (poll_id, option_id, profile_id, tenant_id) values
+  ('00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-00000000f201', '00000000-0000-0000-0000-0000000000c1', :A),
+  ('00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-00000000f201', '00000000-0000-0000-0000-0000000000d1', :A),
+  ('00000000-0000-0000-0000-00000000f102', '00000000-0000-0000-0000-00000000f202', '00000000-0000-0000-0000-0000000000c1', :A);
+
+\echo '--- MURAL: ATAQUES (esperado: ERR ou rows=0)'
+begin; select 'M1 sessão sem 2FA (aal1) lê o mural      : ' || t_count(:'c1_aal1', $$select * from posts$$); rollback;
+begin; select 'M2 empresa B lê o mural da empresa A     : ' || t_count(:'b1', $$select * from posts$$); rollback;
+begin; select 'M3 colaborador escreve post direto (REST): ' || t_exec(:'c1', format($$insert into posts (tenant_id, author_id, body) values (%L, '00000000-0000-0000-0000-0000000000c1', 'x')$$, (select tenant_id from profiles where id='00000000-0000-0000-0000-0000000000a1'))); rollback;
+begin; select 'M4 admin lê votos da enquete ANÔNIMA      : ' || t_count(:'a1', $$select * from poll_votes where poll_id = '00000000-0000-0000-0000-00000000f101'$$); rollback;
+begin; select 'M5 RH lê votos de OUTROS na anônima       : ' || t_count(:'r1', $$select * from poll_votes where poll_id = '00000000-0000-0000-0000-00000000f101' and profile_id <> '00000000-0000-0000-0000-0000000000d1'$$); rollback;
+begin; select 'M6 colaborador vota no lugar de outro     : ' || t_exec(:'c1', $$insert into poll_votes (poll_id, option_id, profile_id, tenant_id) select poll_id, id, '00000000-0000-0000-0000-0000000000a1', tenant_id from poll_options where poll_id = '00000000-0000-0000-0000-00000000f102'$$); rollback;
+
+\echo '--- MURAL: USO LEGÍTIMO (esperado: rows>0 / OK)'
+begin; select 'ML1 colaborador (aal2) lê o mural         : ' || t_count(:'c1', $$select * from posts$$); rollback;
+begin; select 'ML2 colaborador vê o PRÓPRIO voto (anôn.) : ' || t_count(:'c1', $$select * from poll_votes where poll_id = '00000000-0000-0000-0000-00000000f101'$$); rollback;
+begin; select 'ML3 admin lê votos da enquete ABERTA       : ' || t_count(:'a1', $$select * from poll_votes where poll_id = '00000000-0000-0000-0000-00000000f102'$$); rollback;
+begin; select 'ML4 service_role grava post (como a API)   : ' || t_exec(:'svc', format($$insert into posts (tenant_id, author_id, body) values (%L, '00000000-0000-0000-0000-0000000000a1', 'via api')$$, (select tenant_id from profiles where id='00000000-0000-0000-0000-0000000000a1'))); rollback;

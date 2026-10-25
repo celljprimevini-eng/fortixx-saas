@@ -195,7 +195,148 @@ async function tick() {
     }
   }
 
+  // Mural + Autoatendimento: se a migration 0013 ainda não estiver aplicada,
+  // só pula (o resto do tick segue funcionando).
+  try {
+    await engage(done);
+  } catch (e) {
+    done.push(`(mural/autoatendimento pulado: ${String(e.message).slice(0, 60)})`);
+  }
+
   console.log(`[${now()}] tick ok →`, done.join(', '));
 }
 
 tick().catch((e) => { console.error('tick falhou:', e.message); process.exit(1); });
+
+// ══════════════════════════════════════════════════════════════════════════
+// Mural + Autoatendimento (migration 0013)
+// ══════════════════════════════════════════════════════════════════════════
+const POSTS = [
+  'Bom dia, time! Lembrando que a reunião geral de sexta foi pra 10h.',
+  'Obrigado a todo mundo que ajudou no fechamento do mês. Foi corrido, mas saiu! 👏',
+  'Alguém tem indicação de curso de Excel avançado? Quero me inscrever no auxílio educação.',
+  'Hoje tem bolo na copa às 15h pra comemorar a meta batida 🎂',
+  'Chegou o novo lote de uniformes. Quem ainda não pegou, passa no RH.',
+  'Dica de segurança: nunca compartilhe sua senha nem o código do 2FA com ninguém.',
+  'Bem-vindos aos novos colegas da Operações! Contem com a gente.',
+  'Lembrete: o prazo pra entregar o comprovante de residência atualizado é dia 30.',
+  'Valeu pela parceria no treinamento de ontem, pessoal da Tecnologia!',
+  'O estacionamento do bloco B vai estar fechado amanhã de manhã para manutenção.',
+];
+const COMMENTS = ['Show!', 'Valeu pelo aviso 🙌', 'Boa!', 'Obrigado!', 'Vou sim', 'Top demais', 'Anotado ✅', 'Parabéns, time!'];
+const POLLS = [
+  ['Qual o melhor dia para a confraternização de fim de ano?', ['Sexta à noite', 'Sábado no almoço', 'Durante o expediente']],
+  ['Como você avalia a nova escala de turnos?', ['Ótima', 'Boa', 'Regular', 'Precisa mudar']],
+  ['Que treinamento você quer no próximo trimestre?', ['Excel', 'Comunicação', 'Liderança', 'Segurança do trabalho']],
+  ['Preferência para o cardápio de sexta?', ['Feijoada', 'Churrasco', 'Massas']],
+];
+const EVENTS = [
+  ['Integração de novos colaboradores', 'Sala de treinamento', 'Apresentação da empresa, benefícios e tour pelas áreas.', 30],
+  ['Treinamento de segurança (NR)', 'Auditório', 'Treinamento obrigatório de segurança do trabalho.', 40],
+  ['Café com a diretoria', 'Copa do 2º andar', 'Bate-papo aberto sobre os resultados do trimestre.', 20],
+  ['Workshop de Excel', 'Online (link no e-mail)', 'Fórmulas, tabelas dinâmicas e gráficos.', null],
+];
+const SR = [
+  ['documento', 'Declaração de vínculo', 'Preciso de uma declaração de vínculo para abrir conta no banco.'],
+  ['holerite', 'Desconto no holerite', 'Apareceu um desconto que não reconheço no último holerite.'],
+  ['beneficio', 'Inclusão de dependente', 'Quero incluir meu filho no plano de saúde.'],
+  ['ponto', 'Ajuste de ponto', 'Esqueci de bater o ponto na saída de ontem.'],
+  ['dados_cadastrais', 'Mudança de endereço', 'Mudei de endereço, como atualizo meu cadastro?'],
+];
+
+const isoDay = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+const ignoreDup = { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' };
+
+/**
+ * Só perfis fictícios (loadgen / [SIM]) agem aqui. Apagar esses perfis
+ * (clean-demo-load / activity-sim-clean) leva junto, em cascata, tudo que
+ * eles criaram — nada fica com cara de dado real do Vini ou do cliente.
+ */
+async function engage(done) {
+  const fake = await rest(`profiles?select=id,full_name,role,birth_date&tenant_id=eq.${T}&status=eq.active&or=(email.like.*%40loadgen.fortixx.local,email.like.*%40sim.fortixx.local)&limit=400`);
+  if (fake.length < 5) return;
+  const hrs = fake.filter((p) => p.role === 'rh' || p.role === 'admin');
+  const leads = fake.filter((p) => ['rh', 'admin', 'gestor'].includes(p.role));
+  const someone = () => pick(fake);
+
+  // aniversário dos fictícios (preenche aos poucos, 15 por tick)
+  const noBday = fake.filter((p) => !p.birth_date).slice(0, 15);
+  for (const p of noBday) {
+    const y = rint(1970, 2003), m = rint(1, 12), d = rint(1, 28);
+    await restWrite('PATCH', `profiles?id=eq.${p.id}`, { birth_date: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+  }
+  if (noBday.length) done.push(`${noBday.length} aniversário(s)`);
+
+  const recent = await rest(`posts?select=id&tenant_id=eq.${T}&order=created_at.desc&limit=15`);
+  if (chance(0.18) || recent.length < 3) {
+    await restWrite('POST', 'posts', [{ tenant_id: T, author_id: someone().id, body: pick(POSTS) }]);
+    done.push('post no mural');
+  }
+  if (recent.length && chance(0.3)) {
+    await fetch(`${SB_URL}/rest/v1/post_reactions`, { method: 'POST', headers: ignoreDup, body: JSON.stringify([{ post_id: pick(recent).id, profile_id: someone().id, tenant_id: T }]) });
+    done.push('curtida');
+  }
+  if (recent.length && chance(0.15)) {
+    await restWrite('POST', 'post_comments', [{ post_id: pick(recent).id, tenant_id: T, author_id: someone().id, body: pick(COMMENTS) }]);
+    done.push('comentário');
+  }
+
+  const openPolls = await rest(`polls?select=id&tenant_id=eq.${T}&closed=eq.false&limit=5`);
+  if (leads.length && (openPolls.length === 0 || (openPolls.length < 3 && chance(0.03)))) {
+    const [q, opts] = pick(POLLS);
+    const poll = await restWrite('POST', 'polls', [{ tenant_id: T, author_id: pick(leads).id, question: q, closes_at: new Date(Date.now() + 10 * 86400000).toISOString() }]);
+    await restWrite('POST', 'poll_options', opts.map((label, position) => ({ poll_id: poll[0].id, tenant_id: T, label, position })));
+    done.push('nova pesquisa');
+  } else if (openPolls.length && chance(0.35)) {
+    const poll = pick(openPolls);
+    const opts = await rest(`poll_options?select=id&poll_id=eq.${poll.id}`);
+    if (opts.length) {
+      await fetch(`${SB_URL}/rest/v1/poll_votes`, { method: 'POST', headers: ignoreDup, body: JSON.stringify([{ poll_id: poll.id, option_id: pick(opts).id, profile_id: someone().id, tenant_id: T }]) });
+      done.push('voto');
+    }
+  }
+
+  if (chance(0.08)) {
+    const start = rint(10, 60), len = pick([5, 10, 15, 20]);
+    const who = someone();
+    const clash = await rest(`leave_requests?select=id&profile_id=eq.${who.id}&status=in.(pending,approved)&limit=1`);
+    if (!clash.length) {
+      await restWrite('POST', 'leave_requests', [{ tenant_id: T, profile_id: who.id, kind: 'ferias', start_date: isoDay(start), end_date: isoDay(start + len - 1), days: len }]);
+      done.push('pedido de férias');
+    }
+  }
+  if (hrs.length && chance(0.06)) {
+    const fakeIds = new Set(fake.map((p) => p.id));
+    const pend = (await rest(`leave_requests?select=id,profile_id&tenant_id=eq.${T}&status=eq.pending&limit=20`)).filter((l) => fakeIds.has(l.profile_id));
+    if (pend.length) {
+      await restWrite('PATCH', `leave_requests?id=eq.${pick(pend).id}`, { status: chance(0.85) ? 'approved' : 'rejected', decided_by: pick(hrs).id, decided_at: now() });
+      done.push('férias decididas');
+    }
+  }
+
+  if (chance(0.07)) {
+    const [category, subject, body] = pick(SR);
+    await restWrite('POST', 'service_requests', [{ tenant_id: T, profile_id: someone().id, category, subject, body }]);
+    done.push('solicitação ao RH');
+  }
+  if (hrs.length && chance(0.05)) {
+    const fakeIds = new Set(fake.map((p) => p.id));
+    const open = (await rest(`service_requests?select=id,profile_id&tenant_id=eq.${T}&status=in.(open,in_progress)&limit=20`)).filter((r) => fakeIds.has(r.profile_id));
+    if (open.length) {
+      await restWrite('PATCH', `service_requests?id=eq.${pick(open).id}`, { status: 'done', response: 'Resolvido! Qualquer dúvida, é só chamar.', handled_by: pick(hrs).id, updated_at: now() });
+      done.push('solicitação atendida');
+    }
+  }
+
+  const upcoming = await rest(`events?select=id&tenant_id=eq.${T}&starts_at=gte.${new Date().toISOString()}&limit=10`);
+  if (hrs.length && (upcoming.length === 0 || (upcoming.length < 4 && chance(0.03)))) {
+    const [title, location, description, capacity] = pick(EVENTS);
+    const start = new Date(Date.now() + rint(3, 25) * 86400000);
+    start.setUTCHours(rint(12, 19), 0, 0, 0);
+    await restWrite('POST', 'events', [{ tenant_id: T, title, location, description, capacity, starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 2 * 3600000).toISOString(), created_by: pick(hrs).id }]);
+    done.push('novo evento');
+  } else if (upcoming.length && chance(0.12)) {
+    await fetch(`${SB_URL}/rest/v1/event_registrations`, { method: 'POST', headers: ignoreDup, body: JSON.stringify([{ event_id: pick(upcoming).id, profile_id: someone().id, tenant_id: T }]) });
+    done.push('inscrição em evento');
+  }
+}
