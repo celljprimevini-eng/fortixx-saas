@@ -141,7 +141,14 @@ export async function GET() {
     .map((p) => p.subject?.id);
 
   return NextResponse.json({
-    me: { id: profile.id, role: profile.role, name: profile.full_name, can_post_official: isHr(profile.role) },
+    me: {
+      id: profile.id,
+      role: profile.role,
+      name: profile.full_name,
+      can_post_official: isHr(profile.role),
+      can_create_poll: ['admin', 'rh', 'gestor'].includes(profile.role),
+      birth_date: byId.get(profile.id)?.birth_date ?? null,
+    },
     posts: feed,
     polls: pollList,
     birthdays: birthdays.map((b) => ({ ...b, congratulated: congratulatedToday.includes(b.id) })),

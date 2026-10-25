@@ -31,6 +31,14 @@ export async function requireProfile(
     return { error: NextResponse.json({ error: 'Não autenticado.' }, { status: 401 }) };
   }
 
+  // Mesma barreira de 2FA do middleware (que só cobre /dashboard): quem tem
+  // fator TOTP cadastrado precisa ter passado pelo código nesta sessão (AAL2)
+  // pra usar a API. Sem isso, só a senha bastaria pra chamar as rotas direto.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+    return { error: NextResponse.json({ error: 'Confirme o código de 2FA para continuar.' }, { status: 401 }) };
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, tenant_id, role, full_name, status')

@@ -100,7 +100,7 @@ create table if not exists leave_requests (
   days int not null check (days > 0),
   note text,
   status text not null default 'pending' check (status in ('pending','approved','rejected','canceled')),
-  decided_by uuid references profiles(id),
+  decided_by uuid references profiles(id) on delete set null,
   decided_at timestamptz,
   decision_note text,
   created_at timestamptz not null default now(),
@@ -118,7 +118,7 @@ create table if not exists service_requests (
   body text not null check (char_length(body) between 1 and 4000),
   status text not null default 'open' check (status in ('open','in_progress','done','rejected')),
   response text,
-  handled_by uuid references profiles(id),
+  handled_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -134,7 +134,7 @@ create table if not exists events (
   starts_at timestamptz not null,
   ends_at timestamptz,
   capacity int check (capacity is null or capacity > 0),
-  created_by uuid references profiles(id),
+  created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
 create index if not exists idx_events_tenant_starts on events(tenant_id, starts_at);
@@ -160,7 +160,7 @@ create table if not exists signature_requests (
   content text not null check (char_length(content) between 1 and 20000),
   content_hash text not null,
   status text not null default 'pending' check (status in ('pending','signed','declined')),
-  requested_by uuid references profiles(id),
+  requested_by uuid references profiles(id) on delete set null,
   signed_name text,
   signed_at timestamptz,
   signer_ip text,
