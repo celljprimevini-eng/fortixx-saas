@@ -46,6 +46,7 @@ export interface Database {
           phone: string | null;
           status: 'active' | 'inactive' | 'on_leave';
           two_factor_enabled: boolean;
+          birth_date: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -384,6 +385,185 @@ export interface Database {
             referencedColumns: ['id'];
           }
         ];
+      };
+      posts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          author_id: string;
+          kind: 'post' | 'comunicado' | 'aniversario';
+          body: string;
+          subject_profile_id: string | null;
+          pinned: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['posts']['Row']> & { tenant_id: Database['public']['Tables']['posts']['Row']['tenant_id']; author_id: Database['public']['Tables']['posts']['Row']['author_id']; body: Database['public']['Tables']['posts']['Row']['body'] };
+        Update: Partial<Database['public']['Tables']['posts']['Row']>;
+        Relationships: [];
+      };
+      post_reactions: {
+        Row: {
+          post_id: string;
+          profile_id: string;
+          tenant_id: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['post_reactions']['Row']> & { post_id: Database['public']['Tables']['post_reactions']['Row']['post_id']; profile_id: Database['public']['Tables']['post_reactions']['Row']['profile_id']; tenant_id: Database['public']['Tables']['post_reactions']['Row']['tenant_id'] };
+        Update: Partial<Database['public']['Tables']['post_reactions']['Row']>;
+        Relationships: [];
+      };
+      post_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          tenant_id: string;
+          author_id: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['post_comments']['Row']> & { post_id: Database['public']['Tables']['post_comments']['Row']['post_id']; tenant_id: Database['public']['Tables']['post_comments']['Row']['tenant_id']; author_id: Database['public']['Tables']['post_comments']['Row']['author_id']; body: Database['public']['Tables']['post_comments']['Row']['body'] };
+        Update: Partial<Database['public']['Tables']['post_comments']['Row']>;
+        Relationships: [];
+      };
+      polls: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          author_id: string;
+          question: string;
+          anonymous: boolean;
+          closes_at: string | null;
+          closed: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['polls']['Row']> & { tenant_id: Database['public']['Tables']['polls']['Row']['tenant_id']; author_id: Database['public']['Tables']['polls']['Row']['author_id']; question: Database['public']['Tables']['polls']['Row']['question'] };
+        Update: Partial<Database['public']['Tables']['polls']['Row']>;
+        Relationships: [];
+      };
+      poll_options: {
+        Row: {
+          id: string;
+          poll_id: string;
+          tenant_id: string;
+          label: string;
+          position: number;
+        };
+        Insert: Partial<Database['public']['Tables']['poll_options']['Row']> & { poll_id: Database['public']['Tables']['poll_options']['Row']['poll_id']; tenant_id: Database['public']['Tables']['poll_options']['Row']['tenant_id']; label: Database['public']['Tables']['poll_options']['Row']['label'] };
+        Update: Partial<Database['public']['Tables']['poll_options']['Row']>;
+        Relationships: [];
+      };
+      poll_votes: {
+        Row: {
+          poll_id: string;
+          option_id: string;
+          profile_id: string;
+          tenant_id: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['poll_votes']['Row']> & { poll_id: Database['public']['Tables']['poll_votes']['Row']['poll_id']; option_id: Database['public']['Tables']['poll_votes']['Row']['option_id']; profile_id: Database['public']['Tables']['poll_votes']['Row']['profile_id']; tenant_id: Database['public']['Tables']['poll_votes']['Row']['tenant_id'] };
+        Update: Partial<Database['public']['Tables']['poll_votes']['Row']>;
+        Relationships: [];
+      };
+      leave_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          profile_id: string;
+          kind: 'ferias' | 'folga' | 'licenca';
+          start_date: string;
+          end_date: string;
+          days: number;
+          note: string | null;
+          status: 'pending' | 'approved' | 'rejected' | 'canceled';
+          decided_by: string | null;
+          decided_at: string | null;
+          decision_note: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['leave_requests']['Row']> & { tenant_id: Database['public']['Tables']['leave_requests']['Row']['tenant_id']; profile_id: Database['public']['Tables']['leave_requests']['Row']['profile_id']; start_date: Database['public']['Tables']['leave_requests']['Row']['start_date']; end_date: Database['public']['Tables']['leave_requests']['Row']['end_date']; days: Database['public']['Tables']['leave_requests']['Row']['days'] };
+        Update: Partial<Database['public']['Tables']['leave_requests']['Row']>;
+        Relationships: [];
+      };
+      service_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          profile_id: string;
+          category: 'documento' | 'beneficio' | 'dados_cadastrais' | 'holerite' | 'ponto' | 'outro';
+          subject: string;
+          body: string;
+          status: 'open' | 'in_progress' | 'done' | 'rejected';
+          response: string | null;
+          handled_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['service_requests']['Row']> & { tenant_id: Database['public']['Tables']['service_requests']['Row']['tenant_id']; profile_id: Database['public']['Tables']['service_requests']['Row']['profile_id']; category: Database['public']['Tables']['service_requests']['Row']['category']; subject: Database['public']['Tables']['service_requests']['Row']['subject']; body: Database['public']['Tables']['service_requests']['Row']['body'] };
+        Update: Partial<Database['public']['Tables']['service_requests']['Row']>;
+        Relationships: [];
+      };
+      events: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          title: string;
+          description: string | null;
+          location: string | null;
+          starts_at: string;
+          ends_at: string | null;
+          capacity: number | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['events']['Row']> & { tenant_id: Database['public']['Tables']['events']['Row']['tenant_id']; title: Database['public']['Tables']['events']['Row']['title']; starts_at: Database['public']['Tables']['events']['Row']['starts_at'] };
+        Update: Partial<Database['public']['Tables']['events']['Row']>;
+        Relationships: [];
+      };
+      event_registrations: {
+        Row: {
+          event_id: string;
+          profile_id: string;
+          tenant_id: string;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['event_registrations']['Row']> & { event_id: Database['public']['Tables']['event_registrations']['Row']['event_id']; profile_id: Database['public']['Tables']['event_registrations']['Row']['profile_id']; tenant_id: Database['public']['Tables']['event_registrations']['Row']['tenant_id'] };
+        Update: Partial<Database['public']['Tables']['event_registrations']['Row']>;
+        Relationships: [];
+      };
+      signature_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          profile_id: string;
+          title: string;
+          content: string;
+          content_hash: string;
+          status: 'pending' | 'signed' | 'declined';
+          requested_by: string | null;
+          signed_name: string | null;
+          signed_at: string | null;
+          signer_ip: string | null;
+          signer_user_agent: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['signature_requests']['Row']> & { tenant_id: Database['public']['Tables']['signature_requests']['Row']['tenant_id']; profile_id: Database['public']['Tables']['signature_requests']['Row']['profile_id']; title: Database['public']['Tables']['signature_requests']['Row']['title']; content: Database['public']['Tables']['signature_requests']['Row']['content']; content_hash: Database['public']['Tables']['signature_requests']['Row']['content_hash'] };
+        Update: Partial<Database['public']['Tables']['signature_requests']['Row']>;
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          profile_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['push_subscriptions']['Row']> & { tenant_id: Database['public']['Tables']['push_subscriptions']['Row']['tenant_id']; profile_id: Database['public']['Tables']['push_subscriptions']['Row']['profile_id']; endpoint: Database['public']['Tables']['push_subscriptions']['Row']['endpoint']; p256dh: Database['public']['Tables']['push_subscriptions']['Row']['p256dh']; auth: Database['public']['Tables']['push_subscriptions']['Row']['auth'] };
+        Update: Partial<Database['public']['Tables']['push_subscriptions']['Row']>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
